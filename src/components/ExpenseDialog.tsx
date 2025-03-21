@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Goal, Transaction } from '@/interfaces';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/components/ui/toast-utils';
 
 interface ExpenseDialogProps {
   isOpen: boolean;
@@ -26,7 +25,6 @@ const ExpenseDialog = ({
   const [description, setDescription] = useState('');
   const [goalId, setGoalId] = useState<string | undefined>(undefined);
   
-  // Set the selected goal when dialog opens
   useEffect(() => {
     if (isOpen && selectedGoalId) {
       setGoalId(selectedGoalId);
@@ -115,7 +113,7 @@ const ExpenseDialog = ({
               <div className="rounded-md bg-secondary/50 p-3">
                 <div className="font-medium">{selectedGoal.title}</div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                  Остало��ь: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
                 </div>
               </div>
             )}

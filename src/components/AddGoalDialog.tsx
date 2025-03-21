@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { CalendarIcon, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Category, DEFAULT_CATEGORIES, Goal } from '@/interfaces';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/components/ui/toast-utils';
 
 interface AddGoalDialogProps {
   isOpen: boolean;
