@@ -1,12 +1,108 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from 'react';
+import { Goal, Transaction } from '@/interfaces';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import Navbar from '@/components/Navbar';
+import GoalCard from '@/components/GoalCard';
+import AddGoalDialog from '@/components/AddGoalDialog';
+import ExpenseDialog from '@/components/ExpenseDialog';
+import TransactionList from '@/components/TransactionList';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
+  // Local storage for goals and transactions
+  const [goals, setGoals] = useLocalStorage<Goal[]>('goals', []);
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', []);
+  
+  // Dialog states
+  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string>();
+  
+  // Handle adding a new goal
+  const handleAddGoal = (newGoal: Goal) => {
+    setGoals((prevGoals) => [...prevGoals, newGoal]);
+  };
+  
+  // Handle adding a new expense
+  const handleAddExpense = (newTransaction: Transaction) => {
+    setTransactions((prevTransactions) => [...prevTransactions, newTransaction]);
+    
+    // Update goal's current amount
+    setGoals((prevGoals) =>
+      prevGoals.map((goal) =>
+        goal.id === newTransaction.goalId
+          ? {
+              ...goal,
+              currentAmount: goal.currentAmount + newTransaction.amount,
+            }
+          : goal
+      )
+    );
+  };
+  
+  // Open expense dialog for a specific goal
+  const handleOpenExpense = (goalId: string) => {
+    setSelectedGoalId(goalId);
+    setIsExpenseOpen(true);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar onAddGoal={() => setIsAddGoalOpen(true)} />
+      
+      <main className="container py-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
+          {/* Goals Grid */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {goals.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  onAddExpense={handleOpenExpense}
+                  transactions={transactions}
+                />
+              ))}
+            </div>
+            
+            {goals.length === 0 && (
+              <div className="flex min-h-[200px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+                <h2 className="text-lg font-medium">У вас пока нет целей</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Создайте свою первую финансовую цель
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Transaction History */}
+          <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+            <TransactionList
+              transactions={transactions}
+              goals={goals}
+            />
+          </ScrollArea>
+        </div>
+      </main>
+      
+      {/* Dialogs */}
+      <AddGoalDialog
+        isOpen={isAddGoalOpen}
+        onClose={() => setIsAddGoalOpen(false)}
+        onAddGoal={handleAddGoal}
+      />
+      
+      <ExpenseDialog
+        isOpen={isExpenseOpen}
+        onClose={() => {
+          setIsExpenseOpen(false);
+          setSelectedGoalId(undefined);
+        }}
+        onAddExpense={handleAddExpense}
+        goals={goals}
+        selectedGoalId={selectedGoalId}
+      />
     </div>
   );
 };
