@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react';
 import { Transaction, Goal } from '@/interfaces';
 import { format } from 'date-fns';
@@ -58,12 +57,12 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
   if (transactions.length === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-          <div className="rounded-full bg-secondary/50 p-3">
-            <ArchiveIcon className="h-6 w-6 text-muted-foreground" />
+        <CardContent className="flex flex-col items-center justify-center py-4 text-center">
+          <div className="rounded-full bg-secondary/50 p-2">
+            <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
           </div>
-          <h3 className="mt-4 text-lg font-medium">Нет расходов</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h3 className="mt-2 text-base font-medium">Нет расходов</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
             Добавьте свои первые расходы, чтобы отслеживать прогресс
           </p>
         </CardContent>
@@ -75,42 +74,42 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
   const renderTransactionsByDate = (groupedTransactions: Record<string, Transaction[]>) => {
     return Object.entries(groupedTransactions).map(([date, dateTransactions]) => (
       <div key={date}>
-        <div className="bg-muted/50 px-6 py-2">
-          <p className="text-sm font-medium">
+        <div className="bg-muted/50 px-4 py-1">
+          <p className="text-xs font-medium">
             {format(new Date(date), 'EEEE, d MMMM yyyy', { locale: ru })}
           </p>
         </div>
-        <div className="space-y-0.5">
+        <div className="space-y-0">
           {dateTransactions.map((transaction, index) => {
             const goal = goals.find(g => g.id === transaction.goalId);
             return (
               <div
                 key={transaction.id}
                 className={cn(
-                  "flex items-start justify-between gap-4 px-6 py-3 hover:bg-muted/30",
-                  index !== dateTransactions.length - 1 && "border-b"
+                  "flex items-start justify-between gap-3 px-4 py-2 hover:bg-muted/30",
+                  index !== dateTransactions.length - 1 && "border-b border-muted/30"
                 )}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div 
-                    className="rounded-full p-2"
+                    className="rounded-full p-1.5"
                     style={{ 
                       backgroundColor: goal ? `${goal.color}15` : 'hsl(var(--muted))',
                       color: goal?.color
                     }}
                   >
-                    <ArrowDownCircle className="h-4 w-4" />
+                    <ArrowDownCircle className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <p className="font-medium">{transaction.description}</p>
+                    <p className="text-sm font-medium">{transaction.description}</p>
                     {goal && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {goal.title}
                       </p>
                     )}
                   </div>
                 </div>
-                <p className="shrink-0 font-medium">
+                <p className="shrink-0 text-sm font-medium">
                   {transaction.amount.toLocaleString()} ₽
                 </p>
               </div>
@@ -123,31 +122,31 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-4">
-        <CardTitle>История расходов</CardTitle>
-        <CardDescription>
+      <CardHeader className="pb-2 pt-3">
+        <CardTitle className="text-lg">История расходов</CardTitle>
+        <CardDescription className="text-xs">
           Все расходы по вашим финансовым целям
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0 pb-0">
         <Tabs defaultValue="recent" onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-2 grid w-full grid-cols-2">
+          <TabsList className="mb-1 grid w-full grid-cols-2">
             <TabsTrigger value="recent">Последние</TabsTrigger>
             <TabsTrigger value="all">Все расходы</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="recent" className="space-y-0.5">
+          <TabsContent value="recent" className="space-y-0">
             {renderTransactionsByDate(recentTransactionsByDate)}
             
             {recentTransactions.length === 0 && (
-              <div className="px-6 py-4 text-center text-sm text-muted-foreground">
+              <div className="px-4 py-3 text-center text-xs text-muted-foreground">
                 Нет недавних транзакций
               </div>
             )}
             
             {recentTransactions.length > 0 && transactions.length > 3 && (
               <div 
-                className="cursor-pointer px-6 py-3 text-center text-sm font-medium text-primary hover:underline"
+                className="cursor-pointer px-4 py-2 text-center text-xs font-medium text-primary hover:underline"
                 onClick={() => setActiveTab("all")}
               >
                 Смотреть все транзакции
@@ -155,7 +154,7 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
             )}
           </TabsContent>
           
-          <TabsContent value="all" className="space-y-0.5">
+          <TabsContent value="all" className="space-y-0">
             {renderTransactionsByDate(transactionsByDate)}
           </TabsContent>
         </Tabs>
