@@ -8,6 +8,7 @@ import AddGoalDialog from '@/components/AddGoalDialog';
 import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
 const Index = () => {
   // Local storage for goals and transactions
   const [goals, setGoals] = useLocalStorage<Goal[]>('goals', []);
@@ -42,13 +43,14 @@ const Index = () => {
     setSelectedGoalId(goalId);
     setIsExpenseOpen(true);
   };
+
   return <div className="min-h-screen bg-background">
       <Navbar onAddGoal={() => setIsAddGoalOpen(true)} />
       
       <main className="container py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
           {/* Mobile: Transaction History appears first */}
-          {isMobile && <div className="mb-8">
+          {isMobile && <div className="mb-0">
               <ScrollArea className="h-[350px] pr-4 mx-0 my-0 py-0 px-[3px]">
                 <TransactionList transactions={transactions} goals={goals} />
               </ScrollArea>
@@ -84,4 +86,5 @@ const Index = () => {
     }} onAddExpense={handleAddExpense} goals={goals} selectedGoalId={selectedGoalId} />
     </div>;
 };
+
 export default Index;
