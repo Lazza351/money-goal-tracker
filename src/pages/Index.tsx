@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useIsMobile } from '@/hooks/use-mobile';
 import Navbar from '@/components/Navbar';
 import GoalCard from '@/components/GoalCard';
 import AddGoalDialog from '@/components/AddGoalDialog';
@@ -18,6 +19,9 @@ const Index = () => {
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string>();
+  
+  // Check if on mobile
+  const isMobile = useIsMobile();
   
   // Handle adding a new goal
   const handleAddGoal = (newGoal: Goal) => {
@@ -53,6 +57,18 @@ const Index = () => {
       
       <main className="container py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
+          {/* Mobile: Transaction History appears first */}
+          {isMobile && (
+            <div className="mb-8">
+              <ScrollArea className="h-[300px] pr-4">
+                <TransactionList
+                  transactions={transactions}
+                  goals={goals}
+                />
+              </ScrollArea>
+            </div>
+          )}
+          
           {/* Goals Grid */}
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -76,13 +92,15 @@ const Index = () => {
             )}
           </div>
           
-          {/* Transaction History */}
-          <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-            <TransactionList
-              transactions={transactions}
-              goals={goals}
-            />
-          </ScrollArea>
+          {/* Desktop: Transaction History */}
+          {!isMobile && (
+            <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+              <TransactionList
+                transactions={transactions}
+                goals={goals}
+              />
+            </ScrollArea>
+          )}
         </div>
       </main>
       
