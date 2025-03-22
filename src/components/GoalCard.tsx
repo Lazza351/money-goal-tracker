@@ -1,9 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { formatDistanceToNow, isAfter, isBefore } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, CalendarClock, TrendingUp } from 'lucide-react';
+import { ArrowDownCircle, CalendarClock, TrendingUp, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProgressBar from './ProgressBar';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -13,9 +13,17 @@ interface GoalCardProps {
   goal: Goal;
   onAddExpense: (goalId: string) => void;
   transactions: Transaction[];
+  onToggleHideGoal?: (goalId: string) => void;
+  isHidden?: boolean;
 }
 
-const GoalCard = ({ goal, onAddExpense, transactions }: GoalCardProps) => {
+const GoalCard = ({ 
+  goal, 
+  onAddExpense, 
+  transactions, 
+  onToggleHideGoal,
+  isHidden = false 
+}: GoalCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
   // Filter transactions for this goal and calculate statistics
@@ -24,6 +32,21 @@ const GoalCard = ({ goal, onAddExpense, transactions }: GoalCardProps) => {
   const remaining = goal.amount - totalSpent;
   const isOverdue = isBefore(goal.deadline, new Date()) && totalSpent < goal.amount;
   const isCompleted = totalSpent >= goal.amount;
+
+  // Effect to auto-hide completed goals after 1 minute
+  useEffect(() => {
+    let hideTimer: NodeJS.Timeout;
+    
+    if (isCompleted && !goal.hidden && onToggleHideGoal) {
+      hideTimer = setTimeout(() => {
+        onToggleHideGoal(goal.id);
+      }, 60000); // 1 minute = 60000ms
+    }
+    
+    return () => {
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [isCompleted, goal.id, goal.hidden, onToggleHideGoal]);
 
   // Calculate time left to deadline
   let timeLeft = '';
@@ -64,14 +87,34 @@ const GoalCard = ({ goal, onAddExpense, transactions }: GoalCardProps) => {
             </div>
             <h3 className="text-lg font-medium leading-tight tracking-tight">{goal.title}</h3>
           </div>
-          <div 
-            className="flex h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: `${goal.color}15` }}
-          >
-            <TrendingUp 
-              className="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
-              style={{ color: goal.color }}
-            />
+          <div className="flex items-center gap-2">
+            {onToggleHideGoal && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleHideGoal(goal.id);
+                }}
+                title={isHidden ? "Показать цель" : "Скрыть цель"}
+              >
+                {isHidden ? (
+                  <Eye className="h-4 w-4" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            <div 
+              className="flex h-10 w-10 items-center justify-center rounded-full"
+              style={{ backgroundColor: `${goal.color}15` }}
+            >
+              <TrendingUp 
+                className="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
+                style={{ color: goal.color }}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>

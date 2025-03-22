@@ -8,6 +8,7 @@ export interface Goal {
   createdAt: Date;
   category: string;
   color: string;
+  hidden?: boolean;
 }
 
 export interface Transaction {
