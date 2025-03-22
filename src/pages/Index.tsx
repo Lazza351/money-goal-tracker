@@ -60,7 +60,7 @@ const Index = () => {
               {goals.map(goal => <GoalCard key={goal.id} goal={goal} onAddExpense={handleOpenExpense} transactions={transactions} />)}
             </div>
             
-            {goals.length === 0 && <div className="flex-col items-center justify-center rounded-lg border-2 border-dashed mx-0 px-0">
+            {goals.length === 0 && <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed mx-0 px-0">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Создайте свою первую финансовую цель
