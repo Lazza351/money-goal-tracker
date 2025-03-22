@@ -19,8 +19,8 @@ const ProgressBar = ({
   color,
   height = 8,
 }: ProgressBarProps) => {
-  // Calculate percentage, capped at 100%
-  const percentage = Math.min(Math.round((currentValue / maxValue) * 100), 100);
+  // Calculate percentage, ensuring it's non-negative and capped at 100%
+  const percentage = Math.min(Math.max(0, Math.round((currentValue / maxValue) * 100)), 100);
   
   // Dynamic styles based on props
   const progressStyle = {

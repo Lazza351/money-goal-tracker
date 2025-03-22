@@ -40,18 +40,7 @@ const SurvivalGoalCard = ({
   const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(today, periodStart)));
   const daysRemaining = Math.max(0, totalDays - daysElapsed);
   
-  // Calculate spent amount
-  const totalSpent = goal.currentAmount;
-  const remainingAmount = goal.amount - totalSpent;
-  
-  // Calculate daily allowance
-  const dailyAllowance = remainingAmount / Math.max(1, daysRemaining);
-  
-  // Calculate today's remaining allowance
-  const todayAllowance = dailyAllowance;
-  const isOverBudget = remainingAmount < 0;
-  
-  // Calculate actual max amount based on transactions
+  // Calculate actual max amount based on transactions (income)
   const getActualMaxAmount = () => {
     // Get all income transactions
     const incomeTransactions = transactions
@@ -66,6 +55,20 @@ const SurvivalGoalCard = ({
   
   // Get the actual maximum amount including added funds
   const actualMaxAmount = getActualMaxAmount();
+  
+  // Calculate spent amount - only consider positive transactions (expenses)
+  const expenseTransactions = transactions
+    .filter(t => t.goalId === goal.id && t.amount > 0);
+  
+  const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const remainingAmount = actualMaxAmount - totalSpent;
+  
+  // Calculate daily allowance
+  const dailyAllowance = remainingAmount / Math.max(1, daysRemaining);
+  
+  // Calculate today's remaining allowance
+  const todayAllowance = dailyAllowance;
+  const isOverBudget = remainingAmount < 0;
 
   // Handle adding funds
   const handleAddFunds = () => {
