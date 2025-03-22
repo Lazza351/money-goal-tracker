@@ -9,6 +9,10 @@ export interface Goal {
   category: string;
   color: string;
   hidden?: boolean;
+  type?: 'standard' | 'survival';
+  periodStart?: Date;
+  periodEnd?: Date;
+  dailyAllowance?: number;
 }
 
 export interface Transaction {

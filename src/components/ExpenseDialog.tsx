@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ const ExpenseDialog = ({
   }, [isOpen, selectedGoalId]);
   
   const selectedGoal = goals.find(g => g.id === goalId);
+  const isSurvivalGoal = selectedGoal?.type === 'survival';
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +104,7 @@ const ExpenseDialog = ({
                   </option>
                   {goals.map((goal) => (
                     <option key={goal.id} value={goal.id}>
-                      {goal.title}
+                      {goal.title} {goal.type === 'survival' ? '(Выживание)' : ''}
                     </option>
                   ))}
                 </select>
@@ -110,11 +112,22 @@ const ExpenseDialog = ({
             )}
             
             {selectedGoal && (
-              <div className="rounded-md bg-secondary/50 p-3">
+              <div className={`rounded-md p-3 ${isSurvivalGoal ? 'bg-orange-100' : 'bg-secondary/50'}`}>
                 <div className="font-medium">{selectedGoal.title}</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
-                </div>
+                {isSurvivalGoal ? (
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                    {selectedGoal.dailyAllowance && (
+                      <span className="block mt-1">
+                        На сегодня: {Math.round(selectedGoal.dailyAllowance).toLocaleString()} ₽
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                  </div>
+                )}
               </div>
             )}
             
