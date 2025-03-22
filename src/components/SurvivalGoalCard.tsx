@@ -50,6 +50,22 @@ const SurvivalGoalCard = ({
   // Calculate today's remaining allowance
   const todayAllowance = dailyAllowance;
   const isOverBudget = remainingAmount < 0;
+  
+  // Calculate actual max amount based on transactions
+  const getActualMaxAmount = () => {
+    // Get all income transactions
+    const incomeTransactions = transactions
+      .filter(t => t.goalId === goal.id && t.amount < 0);
+    
+    // Sum up all income amounts (negative values represent income)
+    const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    // Return original amount plus additional income
+    return goal.amount + totalIncomeAmount;
+  };
+  
+  // Get the actual maximum amount including added funds
+  const actualMaxAmount = getActualMaxAmount();
 
   // Handle adding funds
   const handleAddFunds = () => {
@@ -116,12 +132,12 @@ const SurvivalGoalCard = ({
         <div className="mt-2 space-y-4">
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-semibold">{remainingAmount.toLocaleString()} ₽</span>
-            <span className="text-sm text-muted-foreground">из {goal.amount.toLocaleString()} ₽</span>
+            <span className="text-sm text-muted-foreground">из {actualMaxAmount.toLocaleString()} ₽</span>
           </div>
           
           <ProgressBar 
             currentValue={totalSpent}
-            maxValue={goal.amount}
+            maxValue={actualMaxAmount}
             color={isOverBudget ? '#EF4444' : '#FF4500'}
             height={6}
           />
