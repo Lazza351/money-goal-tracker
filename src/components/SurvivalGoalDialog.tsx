@@ -8,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Goal } from '@/interfaces';
 import { toast } from '@/components/ui/toast-utils';
@@ -58,8 +58,8 @@ const SurvivalGoalDialog = ({
       return;
     }
     
-    // Calculate daily allowance
-    const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
+    // Calculate daily allowance - add 1 to make it inclusive of both start and end dates
+    const totalDays = Math.max(1, differenceInDays(periodEnd, periodStart) + 1);
     const dailyAllowance = Number(amount) / totalDays;
     
     const newGoal: Goal = {

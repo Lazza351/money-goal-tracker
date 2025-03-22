@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -56,14 +55,15 @@ const Index = () => {
   };
 
   // Handle adding income to survival goal
-  const handleAddIncome = (goalId: string, amount: number) => {
+  const handleAddIncome = (goalId: string, amount: number, description: string = 'Пополнение бюджета') => {
     const updatedGoal = goals.find(g => g.id === goalId);
     if (!updatedGoal) return;
     
     // For survival goals, adding income means reducing the currentAmount (spent amount)
+    // No need to limit to 0, allow adding funds beyond the original budget
     setGoals(prevGoals => prevGoals.map(goal => goal.id === goalId ? {
       ...goal,
-      currentAmount: Math.max(0, goal.currentAmount - amount)
+      currentAmount: goal.currentAmount - amount
     } : goal));
     
     // Record the transaction with negative amount (income)
@@ -71,7 +71,7 @@ const Index = () => {
       id: Date.now().toString(),
       goalId,
       amount: -amount, // negative amount represents income
-      description: 'Пополнение бюджета',
+      description, // Use the provided description
       date: new Date(),
     };
     
@@ -121,7 +121,7 @@ const Index = () => {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
           {/* Mobile: Transaction History appears first */}
           {isMobile && (
-            <div>
+            <div className="mb-0">
               <ScrollArea className="h-[350px] pr-4 mx-0 my-0 py-0 px-[3px]">
                 <TransactionList transactions={transactions} goals={goals} />
               </ScrollArea>

@@ -6,13 +6,14 @@ import { ru } from 'date-fns/locale';
 import { ArrowDownCircle, CalendarRange, PlusCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import ProgressBar from './ProgressBar';
 import { toast } from '@/components/ui/toast-utils';
 
 interface SurvivalGoalCardProps {
   goal: Goal;
   onAddExpense: (goalId: string) => void;
-  onAddIncome: (goalId: string, amount: number) => void;
+  onAddIncome: (goalId: string, amount: number, description: string) => void;
   onEditGoal: (goalId: string) => void;
   transactions: Transaction[];
 }
@@ -27,13 +28,15 @@ const SurvivalGoalCard = ({
   const [isHovered, setIsHovered] = useState(false);
   const [showAddFundsInput, setShowAddFundsInput] = useState(false);
   const [fundsToAdd, setFundsToAdd] = useState('');
+  const [description, setDescription] = useState('Пополнение бюджета');
   
-  // Calculate days remaining in the period
+  // Calculate days remaining in the period - include both start and end dates in calculation
   const today = new Date();
   const periodStart = goal.periodStart || goal.createdAt;
   const periodEnd = goal.periodEnd || goal.deadline;
   
-  const totalDays = Math.max(1, differenceInDays(periodEnd, periodStart));
+  // Add 1 to make the calculation inclusive of both start and end dates
+  const totalDays = Math.max(1, differenceInDays(periodEnd, periodStart) + 1);
   const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(today, periodStart)));
   const daysRemaining = Math.max(0, totalDays - daysElapsed);
   
@@ -56,9 +59,15 @@ const SurvivalGoalCard = ({
       return;
     }
     
-    onAddIncome(goal.id, amount);
+    if (!description.trim()) {
+      toast.error('Укажите описание пополнения');
+      return;
+    }
+    
+    onAddIncome(goal.id, amount, description.trim());
     setShowAddFundsInput(false);
     setFundsToAdd('');
+    setDescription('Пополнение бюджета');
   };
 
   // Recent transactions
@@ -151,28 +160,43 @@ const SurvivalGoalCard = ({
           )}
           
           {showAddFundsInput && (
-            <div className="flex gap-2">
-              <input
+            <div className="space-y-2">
+              <Input
                 type="number"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full"
                 placeholder="Сумма"
                 value={fundsToAdd}
                 onChange={(e) => setFundsToAdd(e.target.value)}
               />
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleAddFunds}
-              >
-                ОК
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowAddFundsInput(false)}
-              >
-                Отмена
-              </Button>
+              <Input
+                type="text"
+                className="w-full"
+                placeholder="Описание пополнения"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleAddFunds}
+                  className="flex-1"
+                >
+                  Пополнить
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowAddFundsInput(false);
+                    setFundsToAdd('');
+                    setDescription('Пополнение бюджета');
+                  }}
+                  className="flex-1"
+                >
+                  Отмена
+                </Button>
+              </div>
             </div>
           )}
         </div>
