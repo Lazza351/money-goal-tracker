@@ -113,7 +113,7 @@ const ExpenseDialog = ({
               <div className="rounded-md bg-secondary/50 p-3">
                 <div className="font-medium">{selectedGoal.title}</div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  Остало��ь: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                  Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
                 </div>
               </div>
             )}
