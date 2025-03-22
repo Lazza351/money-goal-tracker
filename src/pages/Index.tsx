@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -9,7 +8,6 @@ import AddGoalDialog from '@/components/AddGoalDialog';
 import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 const Index = () => {
   // Local storage for goals and transactions
   const [goals, setGoals] = useLocalStorage<Goal[]>('goals', []);
@@ -44,26 +42,19 @@ const Index = () => {
     setSelectedGoalId(goalId);
     setIsExpenseOpen(true);
   };
-  
+
   // Toggle goal visibility
   const handleToggleHideGoal = (goalId: string) => {
-    setGoals(prevGoals => prevGoals.map(goal => 
-      goal.id === goalId ? { ...goal, hidden: !goal.hidden } : goal
-    ));
+    setGoals(prevGoals => prevGoals.map(goal => goal.id === goalId ? {
+      ...goal,
+      hidden: !goal.hidden
+    } : goal));
   };
-  
+
   // Filter visible goals
   const visibleGoals = goals.filter(goal => !goal.hidden);
-  
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        onAddGoal={() => setIsAddGoalOpen(true)} 
-        goals={goals}
-        transactions={transactions}
-        onAddExpense={handleOpenExpense}
-        onToggleHideGoal={handleToggleHideGoal}
-      />
+  return <div className="min-h-screen bg-background">
+      <Navbar onAddGoal={() => setIsAddGoalOpen(true)} goals={goals} transactions={transactions} onAddExpense={handleOpenExpense} onToggleHideGoal={handleToggleHideGoal} />
       
       <main className="container py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
@@ -77,25 +68,15 @@ const Index = () => {
           {/* Goals Grid */}
           <div className="space-y-0 mx-0 px-0">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {visibleGoals.map(goal => (
-                <GoalCard 
-                  key={goal.id} 
-                  goal={goal} 
-                  onAddExpense={handleOpenExpense} 
-                  transactions={transactions}
-                  onToggleHideGoal={handleToggleHideGoal}
-                />
-              ))}
+              {visibleGoals.map(goal => <GoalCard key={goal.id} goal={goal} onAddExpense={handleOpenExpense} transactions={transactions} onToggleHideGoal={handleToggleHideGoal} />)}
             </div>
             
-            {visibleGoals.length === 0 && (
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0">
+            {visibleGoals.length === 0 && <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 py-[41px]">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Создайте свою первую финансовую цель или проверьте скрытые цели
                 </p>
-              </div>
-            )}
+              </div>}
           </div>
           
           {/* Desktop: Transaction History */}
@@ -112,8 +93,6 @@ const Index = () => {
       setIsExpenseOpen(false);
       setSelectedGoalId(undefined);
     }} onAddExpense={handleAddExpense} goals={goals} selectedGoalId={selectedGoalId} />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
