@@ -8,7 +8,6 @@ import AddGoalDialog from '@/components/AddGoalDialog';
 import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 const Index = () => {
   // Local storage for goals and transactions
   const [goals, setGoals] = useLocalStorage<Goal[]>('goals', []);
@@ -43,7 +42,6 @@ const Index = () => {
     setSelectedGoalId(goalId);
     setIsExpenseOpen(true);
   };
-
   return <div className="min-h-screen bg-background">
       <Navbar onAddGoal={() => setIsAddGoalOpen(true)} />
       
@@ -57,12 +55,12 @@ const Index = () => {
             </div>}
           
           {/* Goals Grid */}
-          <div className="space-y-6">
+          <div className="space-y-0\n mx-0 px-0">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {goals.map(goal => <GoalCard key={goal.id} goal={goal} onAddExpense={handleOpenExpense} transactions={transactions} />)}
             </div>
             
-            {goals.length === 0 && <div className="flex min-h-[200px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+            {goals.length === 0 && <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border-2 border-dashed mx-0 px-0">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Создайте свою первую финансовую цель
@@ -86,5 +84,4 @@ const Index = () => {
     }} onAddExpense={handleAddExpense} goals={goals} selectedGoalId={selectedGoalId} />
     </div>;
 };
-
 export default Index;
