@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Goal, Transaction } from '@/interfaces';
 import { toast } from '@/components/ui/toast-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShoppingCart, Car, Handshake } from 'lucide-react';
 
 interface ExpenseDialogProps {
   isOpen: boolean;
@@ -14,6 +16,13 @@ interface ExpenseDialogProps {
   goals: Goal[];
   selectedGoalId?: string;
 }
+
+// Emoji descriptions options
+const emojiOptions = [
+  { icon: <ShoppingCart className="h-5 w-5" />, text: "Покупка в магазине", value: "🛒 Покупка в магазине" },
+  { icon: <Car className="h-5 w-5" />, text: "Поездка", value: "🚗 Поездка" },
+  { icon: <Handshake className="h-5 w-5" />, text: "Перевод денег", value: "🤝 Перевод денег" }
+];
 
 const ExpenseDialog = ({ 
   isOpen, 
@@ -25,6 +34,8 @@ const ExpenseDialog = ({
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [goalId, setGoalId] = useState<string | undefined>(undefined);
+  const [descriptionType, setDescriptionType] = useState<'text' | 'emoji'>('text');
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   
   useEffect(() => {
     if (isOpen && selectedGoalId) {
@@ -48,16 +59,27 @@ const ExpenseDialog = ({
       return;
     }
     
-    if (!description.trim()) {
-      toast.error('Укажите описание расхода');
-      return;
+    let finalDescription = '';
+    
+    if (descriptionType === 'text') {
+      if (!description.trim()) {
+        toast.error('Укажите описание расхода');
+        return;
+      }
+      finalDescription = description.trim();
+    } else {
+      if (!selectedEmoji) {
+        toast.error('Выберите тип расхода');
+        return;
+      }
+      finalDescription = selectedEmoji;
     }
     
     const newTransaction: Transaction = {
       id: Date.now().toString(),
       goalId,
       amount: Number(amount),
-      description: description.trim(),
+      description: finalDescription,
       date: new Date(),
     };
     
@@ -71,6 +93,8 @@ const ExpenseDialog = ({
     setAmount('');
     setDescription('');
     setGoalId(undefined);
+    setDescriptionType('text');
+    setSelectedEmoji(null);
   };
   
   const handleClose = () => {
@@ -149,13 +173,46 @@ const ExpenseDialog = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Описание</Label>
-              <Input
-                id="description"
-                placeholder="На что потрачены средства"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <Label>Описание</Label>
+              <Tabs 
+                defaultValue="text" 
+                value={descriptionType} 
+                onValueChange={(value) => setDescriptionType(value as 'text' | 'emoji')}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="text">Текст</TabsTrigger>
+                  <TabsTrigger value="emoji">Эмодзи</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="text" className="space-y-2 mt-2">
+                  <Input
+                    id="description"
+                    placeholder="На что потрачены средства"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="emoji" className="mt-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {emojiOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={selectedEmoji === option.value ? "default" : "outline"}
+                        className={`flex flex-col items-center p-3 h-auto text-xs ${
+                          selectedEmoji === option.value ? "border-primary" : ""
+                        }`}
+                        onClick={() => setSelectedEmoji(option.value)}
+                      >
+                        <div className="mb-1">{option.icon}</div>
+                        <span>{option.text}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
           
