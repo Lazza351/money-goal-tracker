@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { differenceInDays, format, isToday, startOfDay, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, RefreshCw } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -181,7 +181,7 @@ const SurvivalGoalCard = ({
               className="flex h-10 w-10 items-center justify-center rounded-full"
               style={{ backgroundColor: '#FF450015' }}
             >
-              <RefreshCw 
+              <Pencil 
                 className="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
                 style={{ color: '#FF4500' }}
               />
@@ -339,7 +339,7 @@ const SurvivalGoalCard = ({
           className="gap-1.5 transition-all duration-300"
           onClick={() => onEditGoal(goal.id)}
         >
-          <RefreshCw className="h-3.5 w-3.5" />
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
       </CardFooter>
     </Card>
