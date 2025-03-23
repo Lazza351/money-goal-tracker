@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { differenceInDays, format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, CalendarRange, PlusCircle, RefreshCw } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,47 +29,36 @@ const SurvivalGoalCard = ({
   const [fundsToAdd, setFundsToAdd] = useState('');
   const [description, setDescription] = useState('Пополнение бюджета');
   
-  // Calculate days remaining in the period - include both start and end dates in calculation
   const today = new Date();
   const periodStart = goal.periodStart || goal.createdAt;
   const periodEnd = goal.periodEnd || goal.deadline;
   
-  // Add 1 to make the calculation inclusive of both start and end dates
   const totalDays = Math.max(1, differenceInDays(periodEnd, periodStart) + 1);
   const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(today, periodStart)));
   const daysRemaining = Math.max(0, totalDays - daysElapsed);
   
-  // Calculate actual max amount based on transactions (income)
   const getActualMaxAmount = () => {
-    // Get all income transactions
     const incomeTransactions = transactions
       .filter(t => t.goalId === goal.id && t.amount < 0);
     
-    // Sum up all income amounts (negative values represent income)
     const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
     
-    // Return original amount plus additional income
     return goal.amount + totalIncomeAmount;
   };
   
-  // Get the actual maximum amount including added funds
   const actualMaxAmount = getActualMaxAmount();
   
-  // Calculate spent amount - only consider positive transactions (expenses)
   const expenseTransactions = transactions
     .filter(t => t.goalId === goal.id && t.amount > 0);
   
   const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
   const remainingAmount = actualMaxAmount - totalSpent;
   
-  // Calculate daily allowance
   const dailyAllowance = remainingAmount / Math.max(1, daysRemaining);
   
-  // Calculate today's remaining allowance
   const todayAllowance = dailyAllowance;
   const isOverBudget = remainingAmount < 0;
 
-  // Handle adding funds
   const handleAddFunds = () => {
     const amount = Number(fundsToAdd);
     if (isNaN(amount) || amount <= 0) {
@@ -89,7 +77,6 @@ const SurvivalGoalCard = ({
     setDescription('Пополнение бюджета');
   };
 
-  // Recent transactions
   const recentTransactions = [...transactions]
     .filter(t => t.goalId === goal.id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -166,14 +153,26 @@ const SurvivalGoalCard = ({
 
           {recentTransactions.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Последние расходы:</p>
+              <p className="text-xs font-medium text-muted-foreground">Последние операции:</p>
               <div className="space-y-1.5">
-                {recentTransactions.map(transaction => (
-                  <div key={transaction.id} className="flex items-center justify-between text-xs">
-                    <span className="truncate">{transaction.description}</span>
-                    <span>{transaction.amount.toLocaleString()} ₽</span>
-                  </div>
-                ))}
+                {recentTransactions.map(transaction => {
+                  const isIncome = transaction.amount < 0;
+                  return (
+                    <div key={transaction.id} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {isIncome ? (
+                          <ArrowUpCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <ArrowDownCircle className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className="truncate">{transaction.description}</span>
+                      </div>
+                      <span className={isIncome ? 'text-green-500' : 'text-red-500'}>
+                        {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

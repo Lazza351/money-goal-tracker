@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { formatDistanceToNow, isAfter, isBefore } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, CalendarClock, TrendingUp, Eye, EyeOff } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarClock, TrendingUp, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProgressBar from './ProgressBar';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -147,12 +147,24 @@ const GoalCard = ({
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Последние расходы:</p>
               <div className="space-y-1.5">
-                {recentTransactions.map(transaction => (
-                  <div key={transaction.id} className="flex items-center justify-between text-xs">
-                    <span className="truncate">{transaction.description}</span>
-                    <span>{transaction.amount.toLocaleString()} ₽</span>
-                  </div>
-                ))}
+                {recentTransactions.map(transaction => {
+                  const isIncome = transaction.amount < 0;
+                  return (
+                    <div key={transaction.id} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {isIncome ? (
+                          <ArrowUpCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <ArrowDownCircle className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className="truncate">{transaction.description}</span>
+                      </div>
+                      <span className={isIncome ? 'text-green-500' : 'text-red-500'}>
+                        {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Transaction, Goal } from '@/interfaces';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArchiveIcon, ArrowDownCircle } from 'lucide-react';
+import { ArchiveIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -82,6 +82,7 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
         <div className="space-y-0">
           {dateTransactions.map((transaction, index) => {
             const goal = goals.find(g => g.id === transaction.goalId);
+            const isIncome = transaction.amount < 0;
             return (
               <div
                 key={transaction.id}
@@ -94,11 +95,15 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
                   <div 
                     className="rounded-full p-1.5"
                     style={{ 
-                      backgroundColor: goal ? `${goal.color}15` : 'hsl(var(--muted))',
-                      color: goal?.color
+                      backgroundColor: isIncome ? 'rgba(34, 197, 94, 0.15)' : (goal ? `${goal.color}15` : 'rgba(239, 68, 68, 0.15)'),
+                      color: isIncome ? 'rgb(34, 197, 94)' : (goal?.color || 'rgb(239, 68, 68)')
                     }}
                   >
-                    <ArrowDownCircle className="h-3.5 w-3.5" />
+                    {isIncome ? (
+                      <ArrowUpCircle className="h-3.5 w-3.5" />
+                    ) : (
+                      <ArrowDownCircle className="h-3.5 w-3.5" />
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-medium">{transaction.description}</p>
@@ -109,8 +114,8 @@ const TransactionList = ({ transactions, goals }: TransactionListProps) => {
                     )}
                   </div>
                 </div>
-                <p className="shrink-0 text-sm font-medium">
-                  {transaction.amount.toLocaleString()} ₽
+                <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                  {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
                 </p>
               </div>
             );
