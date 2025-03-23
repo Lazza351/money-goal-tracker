@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays, format, isToday, startOfDay, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -28,6 +28,8 @@ const SurvivalGoalCard = ({
   const [showAddFundsInput, setShowAddFundsInput] = useState(false);
   const [fundsToAdd, setFundsToAdd] = useState('');
   const [description, setDescription] = useState('Пополнение бюджета');
+  const [todayRemainingAllowance, setTodayRemainingAllowance] = useState<number | null>(null);
+  const [lastCalculationDay, setLastCalculationDay] = useState<Date | null>(null);
   
   const today = new Date();
   const periodStart = goal.periodStart || goal.createdAt;
@@ -54,10 +56,80 @@ const SurvivalGoalCard = ({
   const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
   const remainingAmount = actualMaxAmount - totalSpent;
   
-  const dailyAllowance = remainingAmount / Math.max(1, daysRemaining);
+  const recalculateDailyAllowance = () => {
+    const futureDaysRemaining = Math.max(0, daysRemaining - 1);
+    
+    if (futureDaysRemaining === 0) {
+      return remainingAmount;
+    }
+    
+    return remainingAmount / futureDaysRemaining;
+  };
   
-  const todayAllowance = dailyAllowance;
+  const getTodayExpenses = () => {
+    return expenseTransactions
+      .filter(t => isToday(new Date(t.date)))
+      .reduce((sum, t) => sum + t.amount, 0);
+  };
+  
+  useEffect(() => {
+    const calculateTodayAllowance = () => {
+      const todayStart = startOfDay(new Date());
+      
+      if (!lastCalculationDay || !isSameDay(lastCalculationDay, todayStart)) {
+        const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
+        setTodayRemainingAllowance(baseAllowance);
+        setLastCalculationDay(todayStart);
+      }
+    };
+    
+    calculateTodayAllowance();
+    
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimer = setTimeout(() => {
+      calculateTodayAllowance();
+    }, timeUntilMidnight);
+    
+    return () => clearTimeout(midnightTimer);
+  }, [goal, daysRemaining, remainingAmount, lastCalculationDay]);
+  
+  useEffect(() => {
+    if (todayRemainingAllowance === null) return;
+    
+    const todayExpenses = getTodayExpenses();
+    const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
+    
+    if (todayExpenses >= baseAllowance) {
+      setTodayRemainingAllowance(0);
+    } else {
+      setTodayRemainingAllowance(baseAllowance - todayExpenses);
+    }
+  }, [transactions, goal, daysRemaining, remainingAmount]);
+  
+  const getTodayAllowanceDisplay = () => {
+    const todayExpenses = getTodayExpenses();
+    const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
+    
+    if (todayExpenses >= baseAllowance) {
+      return 0;
+    }
+    
+    return baseAllowance - todayExpenses;
+  };
+  
+  const dailyAllowance = recalculateDailyAllowance();
+  const todayAllowance = getTodayAllowanceDisplay();
   const isOverBudget = remainingAmount < 0;
+  
+  const todayExpenses = getTodayExpenses();
+  const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
+  const isTodayBudgetDepleted = todayExpenses >= baseAllowance;
 
   const handleAddFunds = () => {
     const amount = Number(fundsToAdd);
@@ -136,12 +208,28 @@ const SurvivalGoalCard = ({
             <div className="flex items-center justify-between rounded-md bg-secondary/50 p-3">
               <div className="flex items-center gap-1.5">
                 <CalendarRange className="h-4 w-4 text-orange-500" />
-                <span className="text-sm font-medium">Сегодня можно потратить:</span>
+                <span className="text-sm font-medium">
+                  {isTodayBudgetDepleted 
+                    ? "Бюджет на сегодня исчерпан" 
+                    : "Сегодня можно потратить:"}
+                </span>
               </div>
-              <span className={`text-sm font-semibold ${isOverBudget ? 'text-red-500' : 'text-green-500'}`}>
+              <span className={`text-sm font-semibold ${isOverBudget || isTodayBudgetDepleted ? 'text-red-500' : 'text-green-500'}`}>
                 {Math.round(todayAllowance).toLocaleString()} ₽
               </span>
             </div>
+            
+            {isTodayBudgetDepleted && dailyAllowance > 0 && (
+              <div className="flex items-center justify-between rounded-md bg-orange-100 p-3">
+                <div className="flex items-center gap-1.5">
+                  <CalendarRange className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm font-medium">Завтра будет доступно:</span>
+                </div>
+                <span className="text-sm font-semibold text-orange-500">
+                  {Math.round(dailyAllowance).toLocaleString()} ₽
+                </span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Осталось дней: {daysRemaining}</span>
