@@ -35,7 +35,7 @@ const HiddenGoalsSheet = ({
           size="sm" 
           className="group flex items-center gap-1.5 rounded-full px-4 transition-all duration-300"
         >
-          <span>Скрытые цели</span>
+          <span className="md:inline hidden">Скрытые цели</span>
           <Archive className="h-4 w-4 transition-all duration-300 group-hover:rotate-12" />
         </Button>
       </SheetTrigger>

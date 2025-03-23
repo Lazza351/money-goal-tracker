@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HiddenGoalsSheet from './HiddenGoalsSheet';
 import { Goal, Transaction } from '@/interfaces';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NavbarProps {
   onAddGoal: () => void;
@@ -22,6 +23,7 @@ const Navbar = ({
   onToggleHideGoal
 }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false);
+  const isMobile = useIsMobile();
 
   // Add scroll event listener to change navbar style on scroll
   useEffect(() => {
@@ -47,7 +49,7 @@ const Navbar = ({
           />
           
           <Button variant="default" size="sm" className="group flex items-center gap-1.5 rounded-full px-4 transition-all duration-300 hover:gap-2" onClick={onAddGoal}>
-            <span>Новая цель</span>
+            <span className="md:inline hidden">Новая цель</span>
             <PlusCircle className="h-4 w-4 transition-all duration-300 group-hover:rotate-90" />
           </Button>
         </div>
