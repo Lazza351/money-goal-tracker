@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -13,6 +14,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { LifeBuoy } from 'lucide-react';
 import { toast } from '@/components/ui/toast-utils';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Index = () => {
   // Local storage for goals and transactions
@@ -24,6 +35,11 @@ const Index = () => {
   const [isSurvivalGoalOpen, setIsSurvivalGoalOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string>();
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  
+  // Alert Dialog state for delete confirmation
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
 
   // Check if on mobile
   const isMobile = useIsMobile();
@@ -33,14 +49,28 @@ const Index = () => {
 
   // Handle adding a new goal
   const handleAddGoal = (newGoal: Goal) => {
+    // Check if editing existing goal
+    if (isEditingGoal && selectedGoalId) {
+      setGoals(prevGoals => prevGoals.map(g => 
+        g.id === selectedGoalId ? { ...newGoal, id: selectedGoalId } : g
+      ));
+      setIsEditingGoal(false);
+      toast.success('Цель успешно обновлена');
+    } 
     // If adding a survival goal and one already exists, update it
-    if (newGoal.type === 'survival' && survivalGoal) {
+    else if (newGoal.type === 'survival' && survivalGoal) {
       setGoals(prevGoals => prevGoals.map(g => 
         g.id === survivalGoal.id ? newGoal : g
       ));
-    } else {
+      toast.success('Цель выживания обновлена');
+    } 
+    // If adding a new goal
+    else {
       setGoals(prevGoals => [...prevGoals, newGoal]);
+      toast.success('Новая цель создана');
     }
+    
+    setSelectedGoalId(undefined);
   };
 
   // Handle adding a new expense
@@ -85,10 +115,41 @@ const Index = () => {
     setIsExpenseOpen(true);
   };
 
-  // Open edit survival goal dialog
-  const handleEditSurvivalGoal = (goalId: string) => {
+  // Open edit dialog for a goal
+  const handleEditGoal = (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+    
     setSelectedGoalId(goalId);
-    setIsSurvivalGoalOpen(true);
+    
+    if (goal.type === 'survival') {
+      setIsSurvivalGoalOpen(true);
+    } else {
+      setIsEditingGoal(true);
+      setIsAddGoalOpen(true);
+    }
+  };
+  
+  // Open delete confirmation
+  const handleOpenDeleteConfirmation = (goalId: string) => {
+    setGoalToDelete(goalId);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  // Delete goal
+  const handleDeleteGoal = () => {
+    if (!goalToDelete) return;
+    
+    setGoals(prevGoals => prevGoals.filter(goal => goal.id !== goalToDelete));
+    
+    // Optionally, also delete related transactions
+    setTransactions(prevTransactions => 
+      prevTransactions.filter(transaction => transaction.goalId !== goalToDelete)
+    );
+    
+    setGoalToDelete(null);
+    setIsDeleteAlertOpen(false);
+    toast.success('Цель удалена');
   };
 
   // Toggle goal visibility
@@ -149,7 +210,8 @@ const Index = () => {
                 goal={survivalGoal} 
                 onAddExpense={handleOpenExpense} 
                 onAddIncome={handleAddIncome}
-                onEditGoal={handleEditSurvivalGoal}
+                onEditGoal={handleEditGoal}
+                onDeleteGoal={handleOpenDeleteConfirmation}
                 transactions={transactions}
               />
             )}
@@ -161,6 +223,8 @@ const Index = () => {
                   key={goal.id} 
                   goal={goal} 
                   onAddExpense={handleOpenExpense} 
+                  onEditGoal={handleEditGoal}
+                  onDeleteGoal={handleOpenDeleteConfirmation}
                   transactions={transactions} 
                   onToggleHideGoal={handleToggleHideGoal} 
                 />
@@ -189,8 +253,13 @@ const Index = () => {
       {/* Dialogs */}
       <AddGoalDialog 
         isOpen={isAddGoalOpen} 
-        onClose={() => setIsAddGoalOpen(false)} 
-        onAddGoal={handleAddGoal} 
+        onClose={() => {
+          setIsAddGoalOpen(false);
+          setSelectedGoalId(undefined);
+          setIsEditingGoal(false);
+        }} 
+        onAddGoal={handleAddGoal}
+        existingGoal={isEditingGoal && selectedGoalId ? goals.find(g => g.id === selectedGoalId) : undefined}
       />
       
       <SurvivalGoalDialog 
@@ -213,6 +282,27 @@ const Index = () => {
         goals={goals} 
         selectedGoalId={selectedGoalId} 
       />
+      
+      {/* Delete Goal Alert Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить цель?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Цель и все связанные с ней транзакции будут удалены.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setGoalToDelete(null)}>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteGoal}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

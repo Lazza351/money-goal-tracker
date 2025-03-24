@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { formatDistanceToNow, isAfter, isBefore } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, CalendarClock, TrendingUp, Eye, EyeOff } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarClock, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProgressBar from './ProgressBar';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 interface GoalCardProps {
   goal: Goal;
   onAddExpense: (goalId: string) => void;
+  onEditGoal?: (goalId: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
   transactions: Transaction[];
   onToggleHideGoal?: (goalId: string) => void;
   isHidden?: boolean;
@@ -20,6 +22,8 @@ interface GoalCardProps {
 const GoalCard = ({ 
   goal, 
   onAddExpense, 
+  onEditGoal,
+  onDeleteGoal,
   transactions, 
   onToggleHideGoal,
   isHidden = false 
@@ -106,15 +110,6 @@ const GoalCard = ({
                 )}
               </Button>
             )}
-            <div 
-              className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{ backgroundColor: `${goal.color}15` }}
-            >
-              <TrendingUp 
-                className="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
-                style={{ color: goal.color }}
-              />
-            </div>
           </div>
         </div>
       </CardHeader>
@@ -171,7 +166,7 @@ const GoalCard = ({
         </div>
       </CardContent>
       
-      <CardFooter className="p-3 pt-0">
+      <CardFooter className="p-3 pt-0 flex gap-2">
         <Button 
           variant="outline" 
           size="sm" 
@@ -181,6 +176,28 @@ const GoalCard = ({
           <ArrowDownCircle className="h-3.5 w-3.5" />
           <span>Списать расход</span>
         </Button>
+        
+        {onEditGoal && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-1.5"
+            onClick={() => onEditGoal(goal.id)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        
+        {onDeleteGoal && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-1.5 hover:bg-red-100 hover:text-red-500"
+            onClick={() => onDeleteGoal(goal.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { differenceInDays, format, isToday, startOfDay, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ interface SurvivalGoalCardProps {
   onAddExpense: (goalId: string) => void;
   onAddIncome: (goalId: string, amount: number, description: string) => void;
   onEditGoal: (goalId: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
   transactions: Transaction[];
 }
 
@@ -22,6 +23,7 @@ const SurvivalGoalCard = ({
   onAddExpense, 
   onAddIncome,
   onEditGoal,
+  onDeleteGoal,
   transactions
 }: SurvivalGoalCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -175,17 +177,6 @@ const SurvivalGoalCard = ({
               Выживание
             </div>
             <h3 className="text-lg font-medium leading-tight tracking-tight">{goal.title}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <div 
-              className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{ backgroundColor: '#FF450015' }}
-            >
-              <Pencil 
-                className="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
-                style={{ color: '#FF4500' }}
-              />
-            </div>
           </div>
         </div>
       </CardHeader>
@@ -341,6 +332,17 @@ const SurvivalGoalCard = ({
         >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
+        
+        {onDeleteGoal && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-1.5 hover:bg-red-100 hover:text-red-500"
+            onClick={() => onDeleteGoal(goal.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
