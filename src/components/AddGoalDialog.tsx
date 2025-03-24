@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -16,15 +17,31 @@ interface AddGoalDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAddGoal: (goal: Goal) => void;
+  existingGoal?: Goal;
 }
 
-const AddGoalDialog = ({ isOpen, onClose, onAddGoal }: AddGoalDialogProps) => {
+const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDialogProps) => {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [deadline, setDeadline] = useState<Date | undefined>(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   );
   const [selectedCategory, setSelectedCategory] = useState<Category>(DEFAULT_CATEGORIES[0]);
+  
+  // Initialize form with existing goal data when editing
+  useEffect(() => {
+    if (existingGoal) {
+      setTitle(existingGoal.title);
+      setAmount(existingGoal.amount.toString());
+      setDeadline(existingGoal.deadline);
+      
+      // Find and set the correct category
+      const category = DEFAULT_CATEGORIES.find(cat => cat.name === existingGoal.category);
+      if (category) {
+        setSelectedCategory(category);
+      }
+    }
+  }, [existingGoal]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,18 +62,20 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal }: AddGoalDialogProps) => {
     }
     
     const newGoal: Goal = {
-      id: Date.now().toString(),
+      id: existingGoal ? existingGoal.id : Date.now().toString(),
       title: title.trim(),
       amount: Number(amount),
-      currentAmount: 0,
+      currentAmount: existingGoal ? existingGoal.currentAmount : 0,
       deadline,
-      createdAt: new Date(),
+      createdAt: existingGoal ? existingGoal.createdAt : new Date(),
       category: selectedCategory.name,
       color: selectedCategory.color,
+      hidden: existingGoal ? existingGoal.hidden : false,
+      type: 'standard',
     };
     
     onAddGoal(newGoal);
-    toast.success('Цель создана');
+    toast.success(existingGoal ? 'Цель обновлена' : 'Цель создана');
     resetForm();
     onClose();
   };
@@ -77,9 +96,9 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal }: AddGoalDialogProps) => {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Создать новую финансовую цель</DialogTitle>
+          <DialogTitle>{existingGoal ? 'Редактировать цель' : 'Создать новую финансовую цель'}</DialogTitle>
           <DialogDescription>
-            Определите цель, сумму и срок достижения
+            {existingGoal ? 'Измените параметры цели' : 'Определите цель, сумму и срок достижения'}
           </DialogDescription>
         </DialogHeader>
         
@@ -177,7 +196,7 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal }: AddGoalDialogProps) => {
             <Button type="button" variant="outline" onClick={handleClose}>
               Отмена
             </Button>
-            <Button type="submit">Создать цель</Button>
+            <Button type="submit">{existingGoal ? 'Сохранить' : 'Создать цель'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
