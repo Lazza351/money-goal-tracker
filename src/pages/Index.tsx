@@ -11,7 +11,7 @@ import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy, Trash2 } from 'lucide-react';
+import { LifeBuoy } from 'lucide-react';
 import { toast } from '@/components/ui/toast-utils';
 import { 
   AlertDialog,
@@ -40,7 +40,7 @@ const Index = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
   
-  // Новый Alert Dialog для очистки локального хранилища
+  // Alert Dialog для очистки локального хранилища
   const [isClearDataAlertOpen, setIsClearDataAlertOpen] = useState(false);
 
   // Check if on mobile
@@ -167,13 +167,15 @@ const Index = () => {
     setIsSurvivalGoalOpen(true);
   };
 
-  // Новая функция для очистки всех данных
+  // Функция для открытия диалога очистки данных
+  const handleOpenClearDataDialog = () => {
+    setIsClearDataAlertOpen(true);
+  };
+
+  // Функция для очистки всех данных
   const handleClearAllData = () => {
     clearGoals();
     clearTransactions();
-    // Или можно использовать clearAllLocalStorage() для полной очистки
-    // clearAllLocalStorage();
-    // window.location.reload(); // Опционально перезагрузить страницу
     setIsClearDataAlertOpen(false);
     toast.success('Все данные успешно очищены');
   };
@@ -189,7 +191,11 @@ const Index = () => {
         goals={goals} 
         transactions={transactions} 
         onAddExpense={handleOpenExpense} 
-        onToggleHideGoal={handleToggleHideGoal} 
+        onToggleHideGoal={handleToggleHideGoal}
+        onEditGoal={handleEditGoal}
+        onDeleteGoal={handleOpenDeleteConfirmation}
+        onAddIncome={handleAddIncome}
+        onClearData={handleOpenClearDataDialog} 
       />
       
       <main className="container py-8">
@@ -205,28 +211,16 @@ const Index = () => {
           
           {/* Goals Section */}
           <div className="space-y-4 mx-0 px-0">
-            <div className="flex justify-between items-center">
-              {/* Add Survival Goal Button (only if no survival goal exists) */}
-              {!survivalGoal && (
-                <Button 
-                  onClick={handleOpenSurvivalGoalDialog}
-                  className="bg-orange-500 hover:bg-orange-600"
-                >
-                  <LifeBuoy className="mr-2 h-4 w-4" />
-                  Создать цель выживания
-                </Button>
-              )}
-              
-              {/* Кнопка очистки данных */}
+            {/* Add Survival Goal Button (only if no survival goal exists) */}
+            {!survivalGoal && (
               <Button 
-                variant="destructive" 
-                onClick={() => setIsClearDataAlertOpen(true)}
-                className="ml-auto"
+                onClick={handleOpenSurvivalGoalDialog}
+                className="bg-orange-500 hover:bg-orange-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Очистить данные
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span className="md:inline hidden">Создать цель выживания</span>
               </Button>
-            </div>
+            )}
             
             {/* Survival Goal Card */}
             {visibleSurvivalGoal && (
