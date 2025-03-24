@@ -11,21 +11,30 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Archive, ArchiveRestore } from 'lucide-react';
 import GoalCard from './GoalCard';
+import SurvivalGoalCard from './SurvivalGoalCard';
 
 interface HiddenGoalsSheetProps {
   goals: Goal[];
   transactions: Transaction[];
   onAddExpense: (goalId: string) => void;
   onToggleHideGoal: (goalId: string) => void;
+  onEditGoal?: (goalId: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
+  onAddIncome?: (goalId: string, amount: number, description: string) => void;
 }
 
 const HiddenGoalsSheet = ({ 
   goals, 
   transactions, 
   onAddExpense, 
-  onToggleHideGoal 
+  onToggleHideGoal,
+  onEditGoal,
+  onDeleteGoal,
+  onAddIncome
 }: HiddenGoalsSheetProps) => {
   const hiddenGoals = goals.filter(goal => goal.hidden);
+  const hiddenStandardGoals = hiddenGoals.filter(goal => goal.type !== 'survival');
+  const hiddenSurvivalGoal = hiddenGoals.find(goal => goal.type === 'survival');
   
   return (
     <Sheet>
@@ -47,14 +56,30 @@ const HiddenGoalsSheet = ({
         <ScrollArea className="h-[calc(100vh-120px)] mt-6">
           {hiddenGoals.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
-              {hiddenGoals.map(goal => (
+              {hiddenSurvivalGoal && onAddIncome && (
+                <SurvivalGoalCard 
+                  key={hiddenSurvivalGoal.id} 
+                  goal={hiddenSurvivalGoal} 
+                  onAddExpense={onAddExpense} 
+                  onAddIncome={onAddIncome}
+                  onEditGoal={onEditGoal || (() => {})}
+                  onDeleteGoal={onDeleteGoal}
+                  onToggleHideGoal={onToggleHideGoal}
+                  isHidden={true}
+                  transactions={transactions}
+                />
+              )}
+              
+              {hiddenStandardGoals.map(goal => (
                 <GoalCard 
                   key={goal.id} 
                   goal={goal} 
                   onAddExpense={onAddExpense} 
+                  onEditGoal={onEditGoal}
+                  onDeleteGoal={onDeleteGoal}
                   transactions={transactions}
                   onToggleHideGoal={onToggleHideGoal}
-                  isHidden
+                  isHidden={true}
                 />
               ))}
             </div>

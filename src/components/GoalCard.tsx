@@ -92,6 +92,20 @@ const GoalCard = ({
             <h3 className="text-lg font-medium leading-tight tracking-tight">{goal.title}</h3>
           </div>
           <div className="flex items-center gap-2">
+            {onDeleteGoal && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-red-100 hover:text-red-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteGoal(goal.id);
+                }}
+                title="Удалить цель"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             {onToggleHideGoal && (
               <Button
                 variant="ghost"
@@ -185,17 +199,6 @@ const GoalCard = ({
             onClick={() => onEditGoal(goal.id)}
           >
             <Pencil className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        
-        {onDeleteGoal && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-1.5 hover:bg-red-100 hover:text-red-500"
-            onClick={() => onDeleteGoal(goal.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </CardFooter>

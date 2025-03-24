@@ -13,6 +13,9 @@ interface NavbarProps {
   transactions: Transaction[];
   onAddExpense: (goalId: string) => void;
   onToggleHideGoal: (goalId: string) => void;
+  onEditGoal?: (goalId: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
+  onAddIncome?: (goalId: string, amount: number, description: string) => void;
 }
 
 const Navbar = ({
@@ -20,7 +23,10 @@ const Navbar = ({
   goals,
   transactions,
   onAddExpense,
-  onToggleHideGoal
+  onToggleHideGoal,
+  onEditGoal,
+  onDeleteGoal,
+  onAddIncome
 }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false);
   const isMobile = useIsMobile();
@@ -45,7 +51,10 @@ const Navbar = ({
             goals={goals} 
             transactions={transactions} 
             onAddExpense={onAddExpense} 
-            onToggleHideGoal={onToggleHideGoal} 
+            onToggleHideGoal={onToggleHideGoal}
+            onEditGoal={onEditGoal}
+            onDeleteGoal={onDeleteGoal}
+            onAddIncome={onAddIncome}
           />
           
           <Button variant="default" size="sm" className="group flex items-center gap-1.5 rounded-full px-4 transition-all duration-300 hover:gap-2" onClick={onAddGoal}>

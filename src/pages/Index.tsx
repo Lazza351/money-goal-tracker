@@ -167,6 +167,7 @@ const Index = () => {
 
   // Filter visible goals (exclude survival goal as it's displayed separately)
   const visibleStandardGoals = goals.filter(goal => !goal.hidden && goal.type !== 'survival');
+  const visibleSurvivalGoal = survivalGoal && !survivalGoal.hidden ? survivalGoal : null;
   
   return (
     <div className="min-h-screen bg-background">
@@ -205,13 +206,14 @@ const Index = () => {
             )}
             
             {/* Survival Goal Card */}
-            {survivalGoal && (
+            {visibleSurvivalGoal && (
               <SurvivalGoalCard 
-                goal={survivalGoal} 
+                goal={visibleSurvivalGoal} 
                 onAddExpense={handleOpenExpense} 
                 onAddIncome={handleAddIncome}
                 onEditGoal={handleEditGoal}
                 onDeleteGoal={handleOpenDeleteConfirmation}
+                onToggleHideGoal={handleToggleHideGoal}
                 transactions={transactions}
               />
             )}
@@ -231,7 +233,7 @@ const Index = () => {
               ))}
             </div>
             
-            {visibleStandardGoals.length === 0 && !survivalGoal && (
+            {visibleStandardGoals.length === 0 && !visibleSurvivalGoal && (
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 py-[41px]">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
