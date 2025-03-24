@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useLocalStorage, clearAllLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Navbar from '@/components/Navbar';
 import GoalCard from '@/components/GoalCard';
@@ -12,7 +11,7 @@ import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy } from 'lucide-react';
+import { LifeBuoy, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/toast-utils';
 import { 
   AlertDialog,
@@ -27,8 +26,8 @@ import {
 
 const Index = () => {
   // Local storage for goals and transactions
-  const [goals, setGoals] = useLocalStorage<Goal[]>('goals', []);
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', []);
+  const [goals, setGoals, clearGoals] = useLocalStorage<Goal[]>('goals', []);
+  const [transactions, setTransactions, clearTransactions] = useLocalStorage<Transaction[]>('transactions', []);
 
   // Dialog states
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
@@ -37,9 +36,12 @@ const Index = () => {
   const [selectedGoalId, setSelectedGoalId] = useState<string>();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   
-  // Alert Dialog state for delete confirmation
+  // Alert Dialog states
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  
+  // Новый Alert Dialog для очистки локального хранилища
+  const [isClearDataAlertOpen, setIsClearDataAlertOpen] = useState(false);
 
   // Check if on mobile
   const isMobile = useIsMobile();
@@ -165,6 +167,17 @@ const Index = () => {
     setIsSurvivalGoalOpen(true);
   };
 
+  // Новая функция для очистки всех данных
+  const handleClearAllData = () => {
+    clearGoals();
+    clearTransactions();
+    // Или можно использовать clearAllLocalStorage() для полной очистки
+    // clearAllLocalStorage();
+    // window.location.reload(); // Опционально перезагрузить страницу
+    setIsClearDataAlertOpen(false);
+    toast.success('Все данные успешно очищены');
+  };
+
   // Filter visible goals (exclude survival goal as it's displayed separately)
   const visibleStandardGoals = goals.filter(goal => !goal.hidden && goal.type !== 'survival');
   const visibleSurvivalGoal = survivalGoal && !survivalGoal.hidden ? survivalGoal : null;
@@ -192,18 +205,28 @@ const Index = () => {
           
           {/* Goals Section */}
           <div className="space-y-4 mx-0 px-0">
-            {/* Add Survival Goal Button (only if no survival goal exists) */}
-            {!survivalGoal && (
-              <div className="mb-4">
+            <div className="flex justify-between items-center">
+              {/* Add Survival Goal Button (only if no survival goal exists) */}
+              {!survivalGoal && (
                 <Button 
                   onClick={handleOpenSurvivalGoalDialog}
-                  className="w-full bg-orange-500 hover:bg-orange-600"
+                  className="bg-orange-500 hover:bg-orange-600"
                 >
                   <LifeBuoy className="mr-2 h-4 w-4" />
                   Создать цель выживания
                 </Button>
-              </div>
-            )}
+              )}
+              
+              {/* Кнопка очистки данных */}
+              <Button 
+                variant="destructive" 
+                onClick={() => setIsClearDataAlertOpen(true)}
+                className="ml-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Очистить данные
+              </Button>
+            </div>
             
             {/* Survival Goal Card */}
             {visibleSurvivalGoal && (
@@ -301,6 +324,27 @@ const Index = () => {
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Clear Data Alert Dialog */}
+      <AlertDialog open={isClearDataAlertOpen} onOpenChange={setIsClearDataAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Очистить все данные?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Все цели и транзакции будут удалены.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsClearDataAlertOpen(false)}>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleClearAllData}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Очистить
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

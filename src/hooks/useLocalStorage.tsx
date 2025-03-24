@@ -1,7 +1,11 @@
 
 import { useState, useEffect } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
+export function useLocalStorage<T>(key: string, initialValue: T): [
+  T, 
+  (value: T | ((val: T) => T)) => void,
+  () => void // Добавляем функцию очистки
+] {
   // Get stored value from localStorage or use initialValue
   const readValue = (): T => {
     if (typeof window === 'undefined') {
@@ -36,6 +40,21 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
   };
+  
+  // Функция для очистки конкретного ключа в localStorage
+  const clearValue = () => {
+    try {
+      // Очищаем состояние в React
+      setStoredValue(initialValue);
+      
+      // Удаляем из localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(key);
+      }
+    } catch (error) {
+      console.warn(`Error clearing localStorage key "${key}":`, error);
+    }
+  };
 
   // Listen for changes to this localStorage key from other tabs/windows
   useEffect(() => {
@@ -54,5 +73,14 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     };
   }, [key]);
 
-  return [storedValue, setValue];
+  return [storedValue, setValue, clearValue];
+}
+
+// Добавляем вспомогательную функцию для очистки всего localStorage
+export function clearAllLocalStorage(): void {
+  if (typeof window !== 'undefined') {
+    window.localStorage.clear();
+    // Необязательно: перезагружаем страницу для сброса всех состояний
+    // window.location.reload();
+  }
 }
