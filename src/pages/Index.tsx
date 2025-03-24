@@ -6,10 +6,12 @@ import Navbar from '@/components/Navbar';
 import GoalCard from '@/components/GoalCard';
 import SurvivalGoalCard from '@/components/SurvivalGoalCard';
 import AddGoalDialog from '@/components/AddGoalDialog';
+import SurvivalGoalDialog from '@/components/SurvivalGoalDialog';
 import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { LifeBuoy } from 'lucide-react';
 import { toast } from '@/components/ui/toast-utils';
 import { 
   AlertDialog,
@@ -29,6 +31,7 @@ const Index = () => {
 
   // Dialog states
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [isSurvivalGoalOpen, setIsSurvivalGoalOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string>();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -159,6 +162,11 @@ const Index = () => {
     } : goal));
   };
 
+  // Create a survival goal
+  const handleOpenSurvivalGoalDialog = () => {
+    setIsSurvivalGoalOpen(true);
+  };
+
   // Функция для открытия диалога очистки данных
   const handleOpenClearDataDialog = () => {
     setIsClearDataAlertOpen(true);
@@ -203,7 +211,18 @@ const Index = () => {
           
           {/* Goals Section */}
           <div className="space-y-4 mx-0 px-0">
-            {/* Standard Goals Grid */}
+            {/* Add Survival Goal Button (only if no survival goal exists) */}
+            {!survivalGoal && (
+              <Button 
+                onClick={handleOpenSurvivalGoalDialog}
+                className="bg-orange-500 hover:bg-orange-600"
+              >
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span className="md:inline hidden">Создать цель выживания</span>
+              </Button>
+            )}
+            
+            {/* Survival Goal Card */}
             {visibleSurvivalGoal && (
               <SurvivalGoalCard 
                 goal={visibleSurvivalGoal} 
@@ -216,6 +235,7 @@ const Index = () => {
               />
             )}
             
+            {/* Standard Goals Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {visibleStandardGoals.map(goal => (
                 <GoalCard 
@@ -234,7 +254,7 @@ const Index = () => {
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 py-[41px]">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Создайте свою первую финансовую цель
+                  Создайте свою первую финансовую цель или проверьте скрытые цели
                 </p>
               </div>
             )}
@@ -259,6 +279,16 @@ const Index = () => {
         }} 
         onAddGoal={handleAddGoal}
         existingGoal={isEditingGoal && selectedGoalId ? goals.find(g => g.id === selectedGoalId) : undefined}
+      />
+      
+      <SurvivalGoalDialog 
+        isOpen={isSurvivalGoalOpen} 
+        onClose={() => {
+          setIsSurvivalGoalOpen(false);
+          setSelectedGoalId(undefined);
+        }} 
+        onAddGoal={handleAddGoal}
+        existingSurvivalGoal={selectedGoalId ? goals.find(g => g.id === selectedGoalId) : survivalGoal}
       />
       
       <ExpenseDialog 
