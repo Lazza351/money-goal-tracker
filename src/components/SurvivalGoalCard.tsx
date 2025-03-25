@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { differenceInDays, format, isToday, startOfDay, isSameDay } from 'date-fns';
@@ -82,11 +81,19 @@ const SurvivalGoalCard = ({
   useEffect(() => {
     const calculateTodayAllowance = () => {
       const todayStart = startOfDay(new Date());
+      const todayExpenses = getTodayExpenses();
+      const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
       
       if (!lastCalculationDay || !isSameDay(lastCalculationDay, todayStart)) {
-        const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
         setTodayRemainingAllowance(baseAllowance);
         setLastCalculationDay(todayStart);
+      } else {
+        const updatedAllowance = recalculateDailyAllowance();
+        if (todayExpenses >= updatedAllowance) {
+          setTodayRemainingAllowance(0);
+        } else {
+          setTodayRemainingAllowance(updatedAllowance - todayExpenses);
+        }
       }
     };
     
@@ -104,24 +111,11 @@ const SurvivalGoalCard = ({
     }, timeUntilMidnight);
     
     return () => clearTimeout(midnightTimer);
-  }, [goal, daysRemaining, remainingAmount, lastCalculationDay]);
-  
-  useEffect(() => {
-    if (todayRemainingAllowance === null) return;
-    
-    const todayExpenses = getTodayExpenses();
-    const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
-    
-    if (todayExpenses >= baseAllowance) {
-      setTodayRemainingAllowance(0);
-    } else {
-      setTodayRemainingAllowance(baseAllowance - todayExpenses);
-    }
-  }, [transactions, goal, daysRemaining, remainingAmount]);
+  }, [goal, daysRemaining, remainingAmount, lastCalculationDay, transactions]);
   
   const getTodayAllowanceDisplay = () => {
     const todayExpenses = getTodayExpenses();
-    const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
+    const baseAllowance = recalculateDailyAllowance();
     
     if (todayExpenses >= baseAllowance) {
       return 0;
