@@ -166,7 +166,7 @@ const Index = () => {
               {visibleStandardGoals.map(goal => <GoalCard key={goal.id} goal={goal} onAddExpense={handleOpenExpense} onEditGoal={handleEditGoal} onDeleteGoal={handleOpenDeleteConfirmation} transactions={transactions} onToggleHideGoal={handleToggleHideGoal} />)}
             </div>
             
-            {visibleStandardGoals.length === 0 && !visibleSurvivalGoal && <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 my-0 py-[40px]">
+            {visibleStandardGoals.length === 0 && !visibleSurvivalGoal && <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 py-[40px] my-px">
                 <h2 className="text-lg font-medium">У вас пока нет целей</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Создайте свою первую финансовую цель или проверьте скрытые цели
