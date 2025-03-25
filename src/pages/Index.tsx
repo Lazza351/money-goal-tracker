@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage, clearAllLocalStorage } from '@/hooks/useLocalStorage';
@@ -6,13 +7,9 @@ import Navbar from '@/components/Navbar';
 import GoalCard from '@/components/GoalCard';
 import SurvivalGoalCard from '@/components/SurvivalGoalCard';
 import AddGoalDialog from '@/components/AddGoalDialog';
-import SurvivalGoalDialog from '@/components/SurvivalGoalDialog';
 import ExpenseDialog from '@/components/ExpenseDialog';
 import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { LifeBuoy } from 'lucide-react';
-import { toast } from '@/components/ui/toast-utils';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { toast } from '@/components/ui/toast-utils';
 
 const Index = () => {
   // Local storage for goals and transactions
@@ -31,7 +29,6 @@ const Index = () => {
 
   // Dialog states
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
-  const [isSurvivalGoalOpen, setIsSurvivalGoalOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string>();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -123,13 +120,8 @@ const Index = () => {
     if (!goal) return;
     
     setSelectedGoalId(goalId);
-    
-    if (goal.type === 'survival') {
-      setIsSurvivalGoalOpen(true);
-    } else {
-      setIsEditingGoal(true);
-      setIsAddGoalOpen(true);
-    }
+    setIsEditingGoal(true);
+    setIsAddGoalOpen(true);
   };
   
   // Open delete confirmation
@@ -160,11 +152,6 @@ const Index = () => {
       ...goal,
       hidden: !goal.hidden
     } : goal));
-  };
-
-  // Create a survival goal
-  const handleOpenSurvivalGoalDialog = () => {
-    setIsSurvivalGoalOpen(true);
   };
 
   // Функция для открытия диалога очистки данных
@@ -211,17 +198,6 @@ const Index = () => {
           
           {/* Goals Section */}
           <div className="space-y-4 mx-0 px-0">
-            {/* Add Survival Goal Button (only if no survival goal exists) */}
-            {!survivalGoal && (
-              <Button 
-                onClick={handleOpenSurvivalGoalDialog}
-                className="bg-orange-500 hover:bg-orange-600"
-              >
-                <LifeBuoy className="mr-2 h-4 w-4" />
-                <span className="md:inline hidden">Создать цель выживания</span>
-              </Button>
-            )}
-            
             {/* Survival Goal Card */}
             {visibleSurvivalGoal && (
               <SurvivalGoalCard 
@@ -279,16 +255,6 @@ const Index = () => {
         }} 
         onAddGoal={handleAddGoal}
         existingGoal={isEditingGoal && selectedGoalId ? goals.find(g => g.id === selectedGoalId) : undefined}
-      />
-      
-      <SurvivalGoalDialog 
-        isOpen={isSurvivalGoalOpen} 
-        onClose={() => {
-          setIsSurvivalGoalOpen(false);
-          setSelectedGoalId(undefined);
-        }} 
-        onAddGoal={handleAddGoal}
-        existingSurvivalGoal={selectedGoalId ? goals.find(g => g.id === selectedGoalId) : survivalGoal}
       />
       
       <ExpenseDialog 

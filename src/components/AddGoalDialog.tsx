@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Check } from 'lucide-react';
+import { CalendarIcon, Check, LifeBuoy, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Category, DEFAULT_CATEGORIES, Goal } from '@/interfaces';
@@ -27,6 +28,7 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   );
   const [selectedCategory, setSelectedCategory] = useState<Category>(DEFAULT_CATEGORIES[0]);
+  const [goalType, setGoalType] = useState<'standard' | 'survival'>('standard');
   
   // Initialize form with existing goal data when editing
   useEffect(() => {
@@ -34,12 +36,16 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
       setTitle(existingGoal.title);
       setAmount(existingGoal.amount.toString());
       setDeadline(existingGoal.deadline);
+      setGoalType(existingGoal.type || 'standard');
       
       // Find and set the correct category
       const category = DEFAULT_CATEGORIES.find(cat => cat.name === existingGoal.category);
       if (category) {
         setSelectedCategory(category);
       }
+    } else {
+      // Reset to default values when creating a new goal
+      setGoalType('standard');
     }
   }, [existingGoal]);
   
@@ -71,8 +77,24 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
       category: selectedCategory.name,
       color: selectedCategory.color,
       hidden: existingGoal ? existingGoal.hidden : false,
-      type: 'standard',
+      type: goalType,
     };
+    
+    // Для цели выживания добавляем дополнительные поля
+    if (goalType === 'survival') {
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      newGoal.periodStart = existingGoal?.periodStart || startOfMonth;
+      newGoal.periodEnd = existingGoal?.periodEnd || endOfMonth;
+      
+      const daysInPeriod = Math.ceil(
+        (newGoal.periodEnd.getTime() - newGoal.periodStart.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      
+      newGoal.dailyAllowance = Math.round(Number(amount) / daysInPeriod);
+    }
     
     onAddGoal(newGoal);
     toast.success(existingGoal ? 'Цель обновлена' : 'Цель создана');
@@ -85,6 +107,7 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
     setAmount('');
     setDeadline(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
     setSelectedCategory(DEFAULT_CATEGORIES[0]);
+    setGoalType('standard');
   };
   
   const handleClose = () => {
@@ -105,17 +128,45 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           <div className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="goalType">Тип цели</Label>
+              <Select
+                value={goalType}
+                onValueChange={(value) => setGoalType(value as 'standard' | 'survival')}
+              >
+                <SelectTrigger id="goalType">
+                  <SelectValue placeholder="Выберите тип цели" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard" className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      <span>Обычная цель</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="survival" className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <LifeBuoy className="h-4 w-4" />
+                      <span>Цель выживания (бюджет)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="title">Название цели</Label>
               <Input
                 id="title"
-                placeholder="Например: Новый ноутбук"
+                placeholder={goalType === 'standard' ? "Например: Новый ноутбук" : "Например: Бюджет на месяц"}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="amount">Необходимая сумма</Label>
+              <Label htmlFor="amount">
+                {goalType === 'standard' ? 'Необходимая сумма' : 'Бюджет на период'}
+              </Label>
               <div className="relative">
                 <Input
                   id="amount"
@@ -160,7 +211,9 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
             </div>
             
             <div className="space-y-2">
-              <Label>Срок достижения</Label>
+              <Label>
+                {goalType === 'standard' ? 'Срок достижения' : 'Период действия бюджета'}
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
