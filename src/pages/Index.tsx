@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage, clearAllLocalStorage } from '@/hooks/useLocalStorage';
@@ -36,9 +35,6 @@ const Index = () => {
   // Alert Dialog states
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
-  
-  // Alert Dialog для очистки локального хранилища
-  const [isClearDataAlertOpen, setIsClearDataAlertOpen] = useState(false);
 
   // Check if on mobile
   const isMobile = useIsMobile();
@@ -154,16 +150,10 @@ const Index = () => {
     } : goal));
   };
 
-  // Функция для открытия диалога очистки данных
-  const handleOpenClearDataDialog = () => {
-    setIsClearDataAlertOpen(true);
-  };
-
   // Функция для очистки всех данных
   const handleClearAllData = () => {
     clearGoals();
     clearTransactions();
-    setIsClearDataAlertOpen(false);
     toast.success('Все данные успешно очищены');
   };
 
@@ -182,7 +172,7 @@ const Index = () => {
         onEditGoal={handleEditGoal}
         onDeleteGoal={handleOpenDeleteConfirmation}
         onAddIncome={handleAddIncome}
-        onClearData={handleOpenClearDataDialog} 
+        onClearData={handleClearAllData} 
       />
       
       <main className="container py-8">
@@ -284,27 +274,6 @@ const Index = () => {
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Clear Data Alert Dialog */}
-      <AlertDialog open={isClearDataAlertOpen} onOpenChange={setIsClearDataAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Очистить все данные?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Все цели и транзакции будут удалены.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsClearDataAlertOpen(false)}>Отмена</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleClearAllData}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Очистить
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
