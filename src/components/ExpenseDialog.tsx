@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Goal, Transaction } from '@/interfaces';
 import { toast } from '@/components/ui/toast-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Car, Handshake } from 'lucide-react';
+import { ShoppingCart, Car, Handshake, CalendarRange } from 'lucide-react';
+import { differenceInDays, endOfDay, isToday, startOfDay } from 'date-fns';
 
 interface ExpenseDialogProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface ExpenseDialogProps {
   onAddExpense: (transaction: Transaction) => void;
   goals: Goal[];
   selectedGoalId?: string;
+  transactions?: Transaction[];
 }
 
 // Emoji descriptions options
@@ -29,7 +31,8 @@ const ExpenseDialog = ({
   onClose, 
   onAddExpense, 
   goals,
-  selectedGoalId 
+  selectedGoalId,
+  transactions = [] 
 }: ExpenseDialogProps) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -45,6 +48,57 @@ const ExpenseDialog = ({
   
   const selectedGoal = goals.find(g => g.id === goalId);
   const isSurvivalGoal = selectedGoal?.type === 'survival';
+  
+  // Вычисление суммы доступной на сегодня для цели выживания
+  const calculateTodayAllowance = () => {
+    if (!selectedGoal || !isSurvivalGoal) return null;
+    
+    const today = new Date();
+    const periodStart = selectedGoal.periodStart || selectedGoal.createdAt;
+    const periodEnd = selectedGoal.periodEnd || selectedGoal.deadline;
+    
+    // Период с учетом текущего дня (включительно) и дня окончания (включительно)
+    const totalDays = Math.max(1, differenceInDays(endOfDay(periodEnd), startOfDay(periodStart)) + 1);
+    const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(endOfDay(today), startOfDay(periodStart))));
+    const daysRemaining = Math.max(0, totalDays - daysElapsed);
+    
+    // Все транзакции для этой цели
+    const goalTransactions = transactions.filter(t => t.goalId === selectedGoal.id);
+    
+    // Расходы и доходы
+    const incomeTransactions = goalTransactions.filter(t => t.amount < 0);
+    const expenseTransactions = goalTransactions.filter(t => t.amount > 0);
+    
+    // Общая сумма доходов
+    const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    // Максимальная сумма (первоначальный бюджет + все пополнения)
+    const actualMaxAmount = selectedGoal.amount + totalIncomeAmount;
+    
+    // Общая сумма расходов
+    const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    // Остаток
+    const remainingAmount = actualMaxAmount - totalSpent;
+    
+    // Расходы за сегодня
+    const todayExpenses = expenseTransactions
+      .filter(t => isToday(new Date(t.date)))
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // Дневной лимит
+    let dailyAllowance;
+    if (daysRemaining <= 1) {
+      dailyAllowance = remainingAmount;
+    } else {
+      dailyAllowance = remainingAmount / daysRemaining;
+    }
+    
+    // Доступно сегодня
+    return Math.max(0, dailyAllowance - todayExpenses);
+  };
+  
+  const todayAllowance = isSurvivalGoal ? calculateTodayAllowance() : null;
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,12 +193,15 @@ const ExpenseDialog = ({
               <div className={`rounded-md p-3 ${isSurvivalGoal ? 'bg-orange-100' : 'bg-secondary/50'}`}>
                 <div className="font-medium">{selectedGoal.title}</div>
                 {isSurvivalGoal ? (
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
-                    {selectedGoal.dailyAllowance && (
-                      <span className="block mt-1">
-                        На сегодня: {Math.round(selectedGoal.dailyAllowance).toLocaleString()} ₽
-                      </span>
+                  <div className="mt-1 text-sm">
+                    <div className="text-muted-foreground">
+                      Осталось всего: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                    </div>
+                    {todayAllowance !== null && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <CalendarRange className="h-3.5 w-3.5 text-orange-500" />
+                        <span className="font-medium">Сегодня доступно: {Math.round(todayAllowance).toLocaleString()} ₽</span>
+                      </div>
                     )}
                   </div>
                 ) : (

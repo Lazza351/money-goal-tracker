@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
-import { differenceInDays, format, isToday, startOfDay, isSameDay } from 'date-fns';
+import { differenceInDays, format, isToday, startOfDay, isSameDay, endOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -34,103 +35,62 @@ const SurvivalGoalCard = ({
   const [showAddFundsInput, setShowAddFundsInput] = useState(false);
   const [fundsToAdd, setFundsToAdd] = useState('');
   const [description, setDescription] = useState('Пополнение бюджета');
-  const [todayRemainingAllowance, setTodayRemainingAllowance] = useState<number | null>(null);
-  const [lastCalculationDay, setLastCalculationDay] = useState<Date | null>(null);
   
   const today = new Date();
   const periodStart = goal.periodStart || goal.createdAt;
   const periodEnd = goal.periodEnd || goal.deadline;
   
-  const totalDays = Math.max(1, differenceInDays(periodEnd, periodStart) + 1);
-  const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(today, periodStart)));
+  // Период с учетом текущего дня (включительно) и дня окончания (включительно)
+  const totalDays = Math.max(1, differenceInDays(endOfDay(periodEnd), startOfDay(periodStart)) + 1);
+  const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(endOfDay(today), startOfDay(periodStart))));
   const daysRemaining = Math.max(0, totalDays - daysElapsed);
   
-  const getActualMaxAmount = () => {
-    const incomeTransactions = transactions
-      .filter(t => t.goalId === goal.id && t.amount < 0);
-    
-    const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
-    return goal.amount + totalIncomeAmount;
-  };
+  // Получаем все транзакции для этой цели
+  const goalTransactions = transactions.filter(t => t.goalId === goal.id);
   
-  const actualMaxAmount = getActualMaxAmount();
+  // Расходы и доходы
+  const incomeTransactions = goalTransactions.filter(t => t.amount < 0);
+  const expenseTransactions = goalTransactions.filter(t => t.amount > 0);
   
-  const expenseTransactions = transactions
-    .filter(t => t.goalId === goal.id && t.amount > 0);
+  // Вычисляем общую сумму дохода (пополнений бюджета)
+  const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
   
+  // Вычисляем максимальную сумму (первоначальный бюджет + все пополнения)
+  const actualMaxAmount = goal.amount + totalIncomeAmount;
+  
+  // Вычисляем общую сумму расходов
   const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+  
+  // Вычисляем остаток
   const remainingAmount = actualMaxAmount - totalSpent;
   
-  const recalculateDailyAllowance = () => {
-    const futureDaysRemaining = Math.max(0, daysRemaining - 1);
-    
-    if (futureDaysRemaining === 0) {
+  // Получаем расходы за сегодня
+  const todayExpenses = expenseTransactions
+    .filter(t => isToday(new Date(t.date)))
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  // Вычисляем дневной лимит, учитывая оставшиеся дни (сегодняшний день включительно)
+  const calculateDailyAllowance = () => {
+    // Если остался только сегодняшний день или дней не осталось
+    if (daysRemaining <= 1) {
       return remainingAmount;
     }
     
-    return remainingAmount / futureDaysRemaining;
+    // Иначе распределяем оставшуюся сумму на все оставшиеся дни
+    return remainingAmount / daysRemaining;
   };
   
-  const getTodayExpenses = () => {
-    return expenseTransactions
-      .filter(t => isToday(new Date(t.date)))
-      .reduce((sum, t) => sum + t.amount, 0);
+  // Вычисляем доступную сумму на сегодня
+  const calculateTodayAllowance = () => {
+    const dailyAllowance = calculateDailyAllowance();
+    // Из дневного лимита вычитаем уже потраченные сегодня средства
+    return Math.max(0, dailyAllowance - todayExpenses);
   };
   
-  useEffect(() => {
-    const calculateTodayAllowance = () => {
-      const todayStart = startOfDay(new Date());
-      const todayExpenses = getTodayExpenses();
-      const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
-      
-      if (!lastCalculationDay || !isSameDay(lastCalculationDay, todayStart)) {
-        setTodayRemainingAllowance(baseAllowance);
-        setLastCalculationDay(todayStart);
-      } else {
-        const updatedAllowance = recalculateDailyAllowance();
-        if (todayExpenses >= updatedAllowance) {
-          setTodayRemainingAllowance(0);
-        } else {
-          setTodayRemainingAllowance(updatedAllowance - todayExpenses);
-        }
-      }
-    };
-    
-    calculateTodayAllowance();
-    
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    
-    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
-    
-    const midnightTimer = setTimeout(() => {
-      calculateTodayAllowance();
-    }, timeUntilMidnight);
-    
-    return () => clearTimeout(midnightTimer);
-  }, [goal, daysRemaining, remainingAmount, lastCalculationDay, transactions]);
-  
-  const getTodayAllowanceDisplay = () => {
-    const todayExpenses = getTodayExpenses();
-    const baseAllowance = recalculateDailyAllowance();
-    
-    if (todayExpenses >= baseAllowance) {
-      return 0;
-    }
-    
-    return baseAllowance - todayExpenses;
-  };
-  
-  const dailyAllowance = recalculateDailyAllowance();
-  const todayAllowance = getTodayAllowanceDisplay();
+  const dailyAllowance = calculateDailyAllowance();
+  const todayAllowance = calculateTodayAllowance();
   const isOverBudget = remainingAmount < 0;
-  
-  const todayExpenses = getTodayExpenses();
-  const baseAllowance = goal.dailyAllowance || (remainingAmount / Math.max(1, daysRemaining));
-  const isTodayBudgetDepleted = todayExpenses >= baseAllowance;
+  const isTodayBudgetDepleted = todayAllowance <= 0;
 
   const handleAddFunds = () => {
     const amount = Number(fundsToAdd);
@@ -150,8 +110,8 @@ const SurvivalGoalCard = ({
     setDescription('Пополнение бюджета');
   };
 
-  const recentTransactions = [...transactions]
-    .filter(t => t.goalId === goal.id)
+  // Получаем последние 3 транзакции
+  const recentTransactions = [...goalTransactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
 

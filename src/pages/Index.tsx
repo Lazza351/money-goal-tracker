@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage, clearAllLocalStorage } from '@/hooks/useLocalStorage';
@@ -11,6 +12,7 @@ import TransactionList from '@/components/TransactionList';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/components/ui/toast-utils';
+
 const Index = () => {
   // Local storage for goals and transactions
   const [goals, setGoals, clearGoals] = useLocalStorage<Goal[]>('goals', []);
@@ -144,6 +146,7 @@ const Index = () => {
   // Filter visible goals (exclude survival goal as it's displayed separately)
   const visibleStandardGoals = goals.filter(goal => !goal.hidden && goal.type !== 'survival');
   const visibleSurvivalGoal = survivalGoal && !survivalGoal.hidden ? survivalGoal : null;
+
   return <div className="min-h-screen bg-background">
       <Navbar onAddGoal={() => setIsAddGoalOpen(true)} goals={goals} transactions={transactions} onAddExpense={handleOpenExpense} onToggleHideGoal={handleToggleHideGoal} onEditGoal={handleEditGoal} onDeleteGoal={handleOpenDeleteConfirmation} onAddIncome={handleAddIncome} onClearData={handleClearAllData} />
       
@@ -188,10 +191,17 @@ const Index = () => {
       setIsEditingGoal(false);
     }} onAddGoal={handleAddGoal} existingGoal={isEditingGoal && selectedGoalId ? goals.find(g => g.id === selectedGoalId) : undefined} />
       
-      <ExpenseDialog isOpen={isExpenseOpen} onClose={() => {
-      setIsExpenseOpen(false);
-      setSelectedGoalId(undefined);
-    }} onAddExpense={handleAddExpense} goals={goals} selectedGoalId={selectedGoalId} />
+      <ExpenseDialog 
+        isOpen={isExpenseOpen} 
+        onClose={() => {
+          setIsExpenseOpen(false);
+          setSelectedGoalId(undefined);
+        }} 
+        onAddExpense={handleAddExpense} 
+        goals={goals} 
+        selectedGoalId={selectedGoalId}
+        transactions={transactions} 
+      />
       
       {/* Delete Goal Alert Dialog */}
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
@@ -212,4 +222,5 @@ const Index = () => {
       </AlertDialog>
     </div>;
 };
+
 export default Index;
