@@ -74,8 +74,8 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
       currentAmount: existingGoal ? existingGoal.currentAmount : 0,
       deadline,
       createdAt: existingGoal ? existingGoal.createdAt : new Date(),
-      category: selectedCategory.name,
-      color: selectedCategory.color,
+      category: goalType === 'survival' ? 'Выживание' : selectedCategory.name,
+      color: goalType === 'survival' ? '#FF4500' : selectedCategory.color,
       hidden: existingGoal ? existingGoal.hidden : false,
       type: goalType,
     };
@@ -182,33 +182,36 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label>Категория</Label>
-              <div className="flex flex-wrap gap-2">
-                {DEFAULT_CATEGORIES.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-all duration-200",
-                      selectedCategory.id === category.id
-                        ? "ring-2 ring-ring"
-                        : "hover:bg-secondary"
-                    )}
-                    style={{ 
-                      backgroundColor: `${category.color}15`,
-                      color: category.color,
-                    }}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {selectedCategory.id === category.id && (
-                      <Check className="h-3.5 w-3.5" />
-                    )}
-                    {category.name}
-                  </button>
-                ))}
+            {/* Only show category selection for standard goals */}
+            {goalType === 'standard' && (
+              <div className="space-y-2">
+                <Label>Категория</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DEFAULT_CATEGORIES.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-all duration-200",
+                        selectedCategory.id === category.id
+                          ? "ring-2 ring-ring"
+                          : "hover:bg-secondary"
+                      )}
+                      style={{ 
+                        backgroundColor: `${category.color}15`,
+                        color: category.color,
+                      }}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {selectedCategory.id === category.id && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             
             <div className="space-y-2">
               <Label>
