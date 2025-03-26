@@ -229,7 +229,7 @@ const SurvivalGoalCard = ({
             )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Осталось дней: {daysRemaining - 1}</span>
+              <span>Осталось дней: {daysRemaining}</span>
               <span>
                 {format(periodStart, 'dd.MM')} - {format(periodEnd, 'dd.MM.yyyy')}
               </span>
