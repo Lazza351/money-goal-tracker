@@ -2,21 +2,18 @@ import { useMemo, useState } from 'react';
 import { Transaction, Goal } from '@/interfaces';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArchiveIcon, ArrowDownCircle, ArrowUpCircle, Undo } from 'lucide-react';
+import { ArchiveIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 interface TransactionListProps {
   transactions: Transaction[];
   goals: Goal[];
-  onUndoTransaction: (transactionId: string) => void;
 }
 
-const TransactionList = ({ transactions, goals, onUndoTransaction }: TransactionListProps) => {
+const TransactionList = ({ transactions, goals }: TransactionListProps) => {
   const [activeTab, setActiveTab] = useState<string>("recent");
-  const [swipedTransactionId, setSwipedTransactionId] = useState<string | null>(null);
   
   // Group transactions by date
   const transactionsByDate = useMemo(() => {
@@ -57,33 +54,6 @@ const TransactionList = ({ transactions, goals, onUndoTransaction }: Transaction
     return grouped;
   }, [recentTransactions]);
 
-  // Handle swipe
-  const handleTouchStart = (transactionId: string, e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    (e.currentTarget as any).startX = touch.clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    const startX = (e.currentTarget as any).startX;
-    const currentX = touch.clientX;
-    const diff = startX - currentX;
-    
-    // If swiping left more than 50px, show undo button
-    if (diff > 50) {
-      const transactionId = e.currentTarget.getAttribute('data-transaction-id');
-      if (transactionId) {
-        setSwipedTransactionId(transactionId);
-      }
-    } else {
-      setSwipedTransactionId(null);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    // Keep the swiped state until user taps elsewhere
-  };
-
   if (transactions.length === 0) {
     return (
       <Card>
@@ -91,9 +61,9 @@ const TransactionList = ({ transactions, goals, onUndoTransaction }: Transaction
           <div className="rounded-full bg-secondary/50 p-2">
             <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
           </div>
-          <h3 className="mt-2 text-base font-medium">Нет транзакций</h3>
+          <h3 className="mt-2 text-base font-medium">Нет расходов</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Добавьте свои первые транзакции, чтобы отслеживать прогресс
+            Добавьте свои первые расходы, чтобы отслеживать прогресс
           </p>
         </CardContent>
       </Card>
@@ -113,87 +83,40 @@ const TransactionList = ({ transactions, goals, onUndoTransaction }: Transaction
           {dateTransactions.map((transaction, index) => {
             const goal = goals.find(g => g.id === transaction.goalId);
             const isIncome = transaction.amount < 0;
-            const isSwipedItem = swipedTransactionId === transaction.id;
-            
             return (
               <div
                 key={transaction.id}
                 className={cn(
-                  "relative",
+                  "flex items-start justify-between gap-3 px-4 py-2 hover:bg-muted/30",
                   index !== dateTransactions.length - 1 && "border-b border-muted/30"
                 )}
               >
-                {/* Undo button that appears when swiped */}
-                {isSwipedItem && (
+                <div className="flex items-center gap-2">
                   <div 
-                    className="absolute right-0 top-0 bottom-0 flex items-center bg-red-500 text-white px-4 z-10"
-                    onClick={() => {
-                      onUndoTransaction(transaction.id);
-                      setSwipedTransactionId(null);
+                    className="rounded-full p-1.5"
+                    style={{ 
+                      backgroundColor: isIncome ? 'rgba(34, 197, 94, 0.15)' : (goal ? `${goal.color}15` : 'rgba(239, 68, 68, 0.15)'),
+                      color: isIncome ? 'rgb(34, 197, 94)' : (goal?.color || 'rgb(239, 68, 68)')
                     }}
                   >
-                    <Undo className="h-4 w-4 mr-1" />
-                    <span className="text-xs font-medium">Отменить</span>
+                    {isIncome ? (
+                      <ArrowUpCircle className="h-3.5 w-3.5" />
+                    ) : (
+                      <ArrowDownCircle className="h-3.5 w-3.5" />
+                    )}
                   </div>
-                )}
-                
-                <div
-                  data-transaction-id={transaction.id}
-                  onTouchStart={(e) => handleTouchStart(transaction.id, e)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  className={cn(
-                    "flex items-start justify-between gap-3 px-4 py-2 hover:bg-muted/30 relative transition-transform duration-200",
-                    isSwipedItem && "transform -translate-x-20"
-                  )}
-                  onClick={() => {
-                    // Clicking anywhere else resets the swiped state
-                    if (swipedTransactionId) {
-                      setSwipedTransactionId(null);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="rounded-full p-1.5"
-                      style={{ 
-                        backgroundColor: isIncome ? 'rgba(34, 197, 94, 0.15)' : (goal ? `${goal.color}15` : 'rgba(239, 68, 68, 0.15)'),
-                        color: isIncome ? 'rgb(34, 197, 94)' : (goal?.color || 'rgb(239, 68, 68)')
-                      }}
-                    >
-                      {isIncome ? (
-                        <ArrowUpCircle className="h-3.5 w-3.5" />
-                      ) : (
-                        <ArrowDownCircle className="h-3.5 w-3.5" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{transaction.description}</p>
-                      {goal && (
-                        <p className="text-xs text-muted-foreground">
-                          {goal.title}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-green-500' : 'text-red-500'}`}>
-                      {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 ml-1 rounded-full hover:bg-gray-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onUndoTransaction(transaction.id);
-                      }}
-                      title="Отменить транзакцию"
-                    >
-                      <Undo className="h-3 w-3" />
-                    </Button>
+                  <div>
+                    <p className="text-sm font-medium">{transaction.description}</p>
+                    {goal && (
+                      <p className="text-xs text-muted-foreground">
+                        {goal.title}
+                      </p>
+                    )}
                   </div>
                 </div>
+                <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                  {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
+                </p>
               </div>
             );
           })}
@@ -205,16 +128,16 @@ const TransactionList = ({ transactions, goals, onUndoTransaction }: Transaction
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2 pt-3">
-        <CardTitle className="text-lg">История транзакций</CardTitle>
+        <CardTitle className="text-lg">История расходов</CardTitle>
         <CardDescription className="text-xs">
-          Все транзакции по вашим финансовым целям
+          Все расходы по вашим финансовым целям
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0 pb-0">
         <Tabs defaultValue="recent" onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-1 grid w-full grid-cols-2">
             <TabsTrigger value="recent">Последние</TabsTrigger>
-            <TabsTrigger value="all">Все транзакции</TabsTrigger>
+            <TabsTrigger value="all">Все расходы</TabsTrigger>
           </TabsList>
           
           <TabsContent value="recent" className="space-y-0">

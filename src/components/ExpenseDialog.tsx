@@ -1,21 +1,30 @@
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Transaction, Goal } from '@/interfaces';
+import { Input } from '@/components/ui/input';
+import { Goal, Transaction } from '@/interfaces';
 import { toast } from '@/components/ui/toast-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShoppingCart, Car, Handshake, CalendarRange } from 'lucide-react';
+import { differenceInDays, endOfDay, isToday, startOfDay } from 'date-fns';
 
 interface ExpenseDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddExpense: (expense: Transaction) => void;
+  onAddExpense: (transaction: Transaction) => void;
   goals: Goal[];
   selectedGoalId?: string;
-  transactions: Transaction[];
+  transactions?: Transaction[];
 }
+
+// Emoji descriptions options
+const emojiOptions = [
+  { icon: <ShoppingCart className="h-5 w-5" />, text: "Покупка в магазине", value: "🛒 Покупка в магазине" },
+  { icon: <Car className="h-5 w-5" />, text: "Поездка", value: "🚗 Поездка" },
+  { icon: <Handshake className="h-5 w-5" />, text: "Перевод денег", value: "🤝 Перевод денег" }
+];
 
 const ExpenseDialog = ({ 
   isOpen, 
@@ -23,201 +32,253 @@ const ExpenseDialog = ({
   onAddExpense, 
   goals,
   selectedGoalId,
-  transactions
+  transactions = [] 
 }: ExpenseDialogProps) => {
-  const [amount, setAmount] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [goalId, setGoalId] = useState<string | undefined>(selectedGoalId);
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [goalId, setGoalId] = useState<string | undefined>(undefined);
+  const [descriptionType, setDescriptionType] = useState<'text' | 'emoji'>('text');
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   
-  // Recent descriptions from transactions (for autocomplete)
-  const [recentDescriptions, setRecentDescriptions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  
-  // Reset form when dialog is opened
   useEffect(() => {
-    if (isOpen) {
-      setAmount("");
-      setDescription("");
+    if (isOpen && selectedGoalId) {
       setGoalId(selectedGoalId);
-      
-      // Get recent descriptions from transactions
-      const descriptions = [...transactions]
-        .filter(t => t.amount > 0) // Only include expenses
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .map(t => t.description)
-        .filter((desc, index, self) => self.indexOf(desc) === index) // Remove duplicates
-        .slice(0, 5); // Get the 5 most recent
-      
-      setRecentDescriptions(descriptions);
     }
-  }, [isOpen, selectedGoalId, transactions]);
+  }, [isOpen, selectedGoalId]);
   
-  // Get the selected goal
-  const selectedGoal = goalId ? goals.find(g => g.id === goalId) : undefined;
+  const selectedGoal = goals.find(g => g.id === goalId);
+  const isSurvivalGoal = selectedGoal?.type === 'survival';
   
-  // Check if we're close to the goal amount
-  const isCloseToGoal = selectedGoal && 
-    selectedGoal.type !== 'survival' && 
-    Number(amount) + selectedGoal.currentAmount >= selectedGoal.amount * 0.95;
-  
-  // Check if this would exceed the goal amount
-  const wouldExceedGoal = selectedGoal && 
-    selectedGoal.type !== 'survival' && 
-    Number(amount) + selectedGoal.currentAmount > selectedGoal.amount;
+  // Вычисление суммы доступной на сегодня для цели выживания
+  const calculateTodayAllowance = () => {
+    if (!selectedGoal || !isSurvivalGoal) return null;
     
-  // Calculate how much over the goal this would be
-  const overGoalAmount = wouldExceedGoal && selectedGoal 
-    ? (Number(amount) + selectedGoal.currentAmount) - selectedGoal.amount 
-    : 0;
-
+    const today = new Date();
+    const periodStart = selectedGoal.periodStart || selectedGoal.createdAt;
+    const periodEnd = selectedGoal.periodEnd || selectedGoal.deadline;
+    
+    // Период с учетом текущего дня (включительно) и дня окончания (включительно)
+    const totalDays = Math.max(1, differenceInDays(endOfDay(periodEnd), startOfDay(periodStart)) + 1);
+    const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(endOfDay(today), startOfDay(periodStart))));
+    const daysRemaining = Math.max(0, totalDays - daysElapsed);
+    
+    // Все транзакции для этой цели
+    const goalTransactions = transactions.filter(t => t.goalId === selectedGoal.id);
+    
+    // Расходы и доходы
+    const incomeTransactions = goalTransactions.filter(t => t.amount < 0);
+    const expenseTransactions = goalTransactions.filter(t => t.amount > 0);
+    
+    // Общая сумма доходов
+    const totalIncomeAmount = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    // Максимальная сумма (первоначальный бюджет + все пополнения)
+    const actualMaxAmount = selectedGoal.amount + totalIncomeAmount;
+    
+    // Общая сумма расходов
+    const totalSpent = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    // Остаток
+    const remainingAmount = actualMaxAmount - totalSpent;
+    
+    // Расходы за сегодня
+    const todayExpenses = expenseTransactions
+      .filter(t => isToday(new Date(t.date)))
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // Дневной лимит
+    let dailyAllowance;
+    if (daysRemaining <= 1) {
+      dailyAllowance = remainingAmount;
+    } else {
+      dailyAllowance = remainingAmount / daysRemaining;
+    }
+    
+    // Доступно сегодня
+    return Math.max(0, dailyAllowance - todayExpenses);
+  };
+  
+  const todayAllowance = isSurvivalGoal ? calculateTodayAllowance() : null;
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate all required fields
-    if (!amount || !description || !goalId) {
-      toast.error("Заполните все поля");
+    if (!goalId) {
+      toast.error('Выберите цель');
       return;
     }
     
-    // Validate amount
-    const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error("Сумма должна быть положительным числом");
+    if (!amount || Number(amount) <= 0) {
+      toast.error('Укажите корректную сумму расхода');
       return;
     }
     
-    const newExpense: Transaction = {
+    let finalDescription = '';
+    
+    if (descriptionType === 'text') {
+      if (!description.trim()) {
+        toast.error('Укажите описание расхода');
+        return;
+      }
+      finalDescription = description.trim();
+    } else {
+      if (!selectedEmoji) {
+        toast.error('Выберите тип расхода');
+        return;
+      }
+      finalDescription = selectedEmoji;
+    }
+    
+    const newTransaction: Transaction = {
       id: Date.now().toString(),
       goalId,
-      amount: numAmount,
-      description: description.trim(),
-      date: new Date()
+      amount: Number(amount),
+      description: finalDescription,
+      date: new Date(),
     };
     
-    onAddExpense(newExpense);
+    onAddExpense(newTransaction);
+    toast.success('Расход добавлен');
+    resetForm();
     onClose();
-    
-    // Show appropriate toast
-    if (wouldExceedGoal) {
-      toast.success("Транзакция добавлена! Цель превышена на " + overGoalAmount?.toLocaleString() + " ₽");
-    } else if (isCloseToGoal) {
-      toast.success("Транзакция добавлена! Вы близки к достижению цели");
-    } else {
-      toast.success("Транзакция добавлена");
-    }
+  };
+  
+  const resetForm = () => {
+    setAmount('');
+    setDescription('');
+    setGoalId(undefined);
+    setDescriptionType('text');
+    setSelectedEmoji(null);
+  };
+  
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Добавить транзакцию</DialogTitle>
+          <DialogTitle>Добавить расход</DialogTitle>
           <DialogDescription>
-            Добавьте информацию о новой транзакции
+            Укажите сумму и описание расхода по выбранной цели
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          {!selectedGoalId && (
-            <div className="grid gap-2">
-              <Label htmlFor="goal">Цель</Label>
-              <select
-                id="goal"
-                value={goalId || ""}
-                onChange={(e) => setGoalId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
-              >
-                <option value="" disabled>Выберите цель</option>
-                {goals.map(goal => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.title}
+        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+          <div className="space-y-4">
+            {!selectedGoalId && (
+              <div className="space-y-2">
+                <Label htmlFor="goal">Цель</Label>
+                <select
+                  id="goal"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={goalId || ''}
+                  onChange={(e) => setGoalId(e.target.value)}
+                >
+                  <option value="" disabled>
+                    Выберите цель
                   </option>
-                ))}
-              </select>
-            </div>
-          )}
-          
-          <div className="grid gap-2">
-            <Label htmlFor="amount">Сумма</Label>
-            <div className="relative">
-              <Input
-                id="amount"
-                type="number"
-                placeholder="Сумма расхода"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="pr-8"
-                required
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                ₽
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="description">Описание</Label>
-            <div className="relative">
-              <Textarea
-                id="description"
-                placeholder="Описание расхода"
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                  setShowSuggestions(e.target.value.length > 0 && recentDescriptions.length > 0);
-                }}
-                onFocus={() => {
-                  setShowSuggestions(description.length > 0 && recentDescriptions.length > 0);
-                }}
-                onBlur={() => {
-                  // Delay hiding to allow for clicks
-                  setTimeout(() => setShowSuggestions(false), 200);
-                }}
-                className="resize-none"
-                required
-              />
-              
-              {showSuggestions && (
-                <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-[150px] overflow-auto rounded-md border bg-popover p-1 shadow-md">
-                  {recentDescriptions
-                    .filter(desc => 
-                      desc.toLowerCase().includes(description.toLowerCase()) &&
-                      desc.toLowerCase() !== description.toLowerCase()
-                    )
-                    .map((desc, index) => (
-                      <div
-                        key={index}
-                        className="cursor-pointer rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
-                        onClick={() => {
-                          setDescription(desc);
-                          setShowSuggestions(false);
-                        }}
-                      >
-                        {desc}
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.title} {goal.type === 'survival' ? '(Выживание)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {selectedGoal && (
+              <div className={`rounded-md p-3 ${isSurvivalGoal ? 'bg-orange-100' : 'bg-secondary/50'}`}>
+                <div className="font-medium">{selectedGoal.title}</div>
+                {isSurvivalGoal ? (
+                  <div className="mt-1 text-sm">
+                    <div className="text-muted-foreground">
+                      Осталось всего: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                    </div>
+                    {todayAllowance !== null && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <CalendarRange className="h-3.5 w-3.5 text-orange-500" />
+                        <span className="font-medium">Сегодня доступно: {Math.round(todayAllowance).toLocaleString()} ₽</span>
                       </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Осталось: {(selectedGoal.amount - selectedGoal.currentAmount).toLocaleString()} ₽
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="amount">Сумма расхода</Label>
+              <div className="relative">
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="1000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pr-8"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  ₽
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Описание</Label>
+              <Tabs 
+                defaultValue="text" 
+                value={descriptionType} 
+                onValueChange={(value) => setDescriptionType(value as 'text' | 'emoji')}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="text">Текст</TabsTrigger>
+                  <TabsTrigger value="emoji">Эмодзи</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="text" className="space-y-2 mt-2">
+                  <Input
+                    id="description"
+                    placeholder="На что потрачены средства"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="emoji" className="mt-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {emojiOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={selectedEmoji === option.value ? "default" : "outline"}
+                        className={`flex flex-col items-center p-3 h-auto text-xs ${
+                          selectedEmoji === option.value ? "border-primary" : ""
+                        }`}
+                        onClick={() => setSelectedEmoji(option.value)}
+                      >
+                        <div className="mb-1">{option.icon}</div>
+                        <span>{option.text}</span>
+                      </Button>
                     ))}
-                </div>
-              )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
           
-          {wouldExceedGoal && (
-            <div className="text-sm text-amber-500">
-              Внимание: Эта транзакция превысит цель на {overGoalAmount?.toLocaleString()} ₽
-            </div>
-          )}
-          
-          <div className="flex justify-end gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-            >
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Отмена
             </Button>
-            <Button type="submit">Добавить</Button>
-          </div>
+            <Button type="submit">Добавить расход</Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

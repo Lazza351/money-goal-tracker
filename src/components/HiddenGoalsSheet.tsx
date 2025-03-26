@@ -21,7 +21,6 @@ interface HiddenGoalsSheetProps {
   onEditGoal?: (goalId: string) => void;
   onDeleteGoal?: (goalId: string) => void;
   onAddIncome?: (goalId: string, amount: number, description: string) => void;
-  onUndoTransaction?: (transactionId: string) => void;
 }
 
 const HiddenGoalsSheet = ({ 
@@ -31,8 +30,7 @@ const HiddenGoalsSheet = ({
   onToggleHideGoal,
   onEditGoal,
   onDeleteGoal,
-  onAddIncome,
-  onUndoTransaction
+  onAddIncome
 }: HiddenGoalsSheetProps) => {
   const hiddenGoals = goals.filter(goal => goal.hidden);
   const hiddenStandardGoals = hiddenGoals.filter(goal => goal.type !== 'survival');
@@ -69,7 +67,6 @@ const HiddenGoalsSheet = ({
                   onToggleHideGoal={onToggleHideGoal}
                   isHidden={true}
                   transactions={transactions}
-                  onUndoTransaction={onUndoTransaction}
                 />
               )}
               
@@ -83,7 +80,6 @@ const HiddenGoalsSheet = ({
                   transactions={transactions}
                   onToggleHideGoal={onToggleHideGoal}
                   isHidden={true}
-                  onUndoTransaction={onUndoTransaction}
                 />
               ))}
             </div>

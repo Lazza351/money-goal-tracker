@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { useLocalStorage, clearAllLocalStorage } from '@/hooks/useLocalStorage';
@@ -94,34 +95,6 @@ const Index = () => {
     toast.success('Бюджет пополнен');
   };
 
-  // Функция отмены транзакции
-  const handleUndoTransaction = (transactionId: string) => {
-    // Найдем транзакцию
-    const transaction = transactions.find(t => t.id === transactionId);
-    if (!transaction) {
-      toast.error('Транзакция не найдена');
-      return;
-    }
-
-    // Удаляем транзакцию из списка
-    setTransactions(prevTransactions => prevTransactions.filter(t => t.id !== transactionId));
-
-    // Обновляем сумму цели
-    setGoals(prevGoals => prevGoals.map(goal => {
-      if (goal.id === transaction.goalId) {
-        // Если это доход (отрицательная сумма), увеличиваем currentAmount
-        // Если это расход (положительная сумма), уменьшаем currentAmount
-        return {
-          ...goal,
-          currentAmount: goal.currentAmount - transaction.amount 
-        };
-      }
-      return goal;
-    }));
-
-    toast.success('Транзакция отменена');
-  };
-
   // Open expense dialog for a specific goal
   const handleOpenExpense = (goalId: string) => {
     setSelectedGoalId(goalId);
@@ -182,36 +155,18 @@ const Index = () => {
           {/* Mobile: Transaction History appears first */}
           {isMobile && <div className="mb-0">
               <ScrollArea className="h-[350px] pr-4 mx-0 my-0 py-0 px-[3px]">
-                <TransactionList transactions={transactions} goals={goals} onUndoTransaction={handleUndoTransaction} />
+                <TransactionList transactions={transactions} goals={goals} />
               </ScrollArea>
             </div>}
           
           {/* Goals Section */}
           <div className="space-y-4 mx-0 px-0">
             {/* Survival Goal Card */}
-            {visibleSurvivalGoal && <SurvivalGoalCard 
-              goal={visibleSurvivalGoal} 
-              onAddExpense={handleOpenExpense} 
-              onAddIncome={handleAddIncome} 
-              onEditGoal={handleEditGoal} 
-              onDeleteGoal={handleOpenDeleteConfirmation} 
-              onToggleHideGoal={handleToggleHideGoal} 
-              onUndoTransaction={handleUndoTransaction}
-              transactions={transactions} 
-            />}
+            {visibleSurvivalGoal && <SurvivalGoalCard goal={visibleSurvivalGoal} onAddExpense={handleOpenExpense} onAddIncome={handleAddIncome} onEditGoal={handleEditGoal} onDeleteGoal={handleOpenDeleteConfirmation} onToggleHideGoal={handleToggleHideGoal} transactions={transactions} />}
             
             {/* Standard Goals Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {visibleStandardGoals.map(goal => <GoalCard 
-                key={goal.id} 
-                goal={goal} 
-                onAddExpense={handleOpenExpense} 
-                onEditGoal={handleEditGoal} 
-                onDeleteGoal={handleOpenDeleteConfirmation} 
-                transactions={transactions} 
-                onToggleHideGoal={handleToggleHideGoal}
-                onUndoTransaction={handleUndoTransaction} 
-              />)}
+              {visibleStandardGoals.map(goal => <GoalCard key={goal.id} goal={goal} onAddExpense={handleOpenExpense} onEditGoal={handleEditGoal} onDeleteGoal={handleOpenDeleteConfirmation} transactions={transactions} onToggleHideGoal={handleToggleHideGoal} />)}
             </div>
             
             {visibleStandardGoals.length === 0 && !visibleSurvivalGoal && <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mx-0 px-0 py-[40px] my-px">
@@ -224,11 +179,7 @@ const Index = () => {
           
           {/* Desktop: Transaction History */}
           {!isMobile && <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-              <TransactionList 
-                transactions={transactions} 
-                goals={goals} 
-                onUndoTransaction={handleUndoTransaction} 
-              />
+              <TransactionList transactions={transactions} goals={goals} />
             </ScrollArea>}
         </div>
       </main>
