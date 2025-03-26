@@ -42,8 +42,8 @@ const SurvivalGoalCard = ({
   
   // Период с учетом текущего дня (включительно) и дня окончания (включительно)
   const totalDays = Math.max(1, differenceInDays(endOfDay(periodEnd), startOfDay(periodStart)) + 1);
-  const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(endOfDay(today), startOfDay(periodStart))));
-  const daysRemaining = Math.max(0, totalDays - daysElapsed);
+  const daysElapsed = Math.min(totalDays, Math.max(0, differenceInDays(endOfDay(today), startOfDay(periodStart)) + 1));
+  const daysRemaining = Math.max(0, totalDays - daysElapsed + 1);
   
   // Получаем все транзакции для этой цели
   const goalTransactions = transactions.filter(t => t.goalId === goal.id);
@@ -86,9 +86,22 @@ const SurvivalGoalCard = ({
     // Из дневного лимита вычитаем уже потраченные сегодня средства
     return Math.max(0, dailyAllowance - todayExpenses);
   };
+
+  // Вычисляем доступную сумму на завтра с учетом оставшихся дней (исключая сегодня)
+  const calculateTomorrowAllowance = () => {
+    // Если осталось меньше двух дней (только сегодня или уже ничего не осталось)
+    if (daysRemaining <= 1) {
+      return 0;
+    }
+    
+    // Для завтрашнего дня распределяем оставшуюся сумму на оставшиеся дни, 
+    // не включая сегодняшний день (т.е. на daysRemaining - 1 дней)
+    return remainingAmount / (daysRemaining - 1);
+  };
   
   const dailyAllowance = calculateDailyAllowance();
   const todayAllowance = calculateTodayAllowance();
+  const tomorrowAllowance = calculateTomorrowAllowance();
   const isOverBudget = remainingAmount < 0;
   const isTodayBudgetDepleted = todayAllowance <= 0;
 
@@ -203,20 +216,20 @@ const SurvivalGoalCard = ({
               </span>
             </div>
             
-            {isTodayBudgetDepleted && dailyAllowance > 0 && (
+            {isTodayBudgetDepleted && daysRemaining > 1 && (
               <div className="flex items-center justify-between rounded-md bg-orange-100 p-3">
                 <div className="flex items-center gap-1.5">
                   <CalendarRange className="h-4 w-4 text-orange-500" />
                   <span className="text-sm font-medium">Завтра будет доступно:</span>
                 </div>
                 <span className="text-sm font-semibold text-orange-500">
-                  {Math.round(dailyAllowance).toLocaleString()} ₽
+                  {Math.round(tomorrowAllowance).toLocaleString()} ₽
                 </span>
               </div>
             )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Осталось дней: {daysRemaining}</span>
+              <span>Осталось дней: {daysRemaining - 1}</span>
               <span>
                 {format(periodStart, 'dd.MM')} - {format(periodEnd, 'dd.MM.yyyy')}
               </span>
