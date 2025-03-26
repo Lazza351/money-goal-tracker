@@ -83,15 +83,21 @@ const AddGoalDialog = ({ isOpen, onClose, onAddGoal, existingGoal }: AddGoalDial
     // Для цели выживания добавляем дополнительные поля
     if (goalType === 'survival') {
       const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       
-      newGoal.periodStart = existingGoal?.periodStart || startOfMonth;
-      newGoal.periodEnd = existingGoal?.periodEnd || endOfMonth;
+      // Используем сегодняшний день как начало периода, если создаем новую цель,
+      // или сохраняем существующую дату начала, если редактируем
+      const startOfMonth = existingGoal?.periodStart || today;
+      
+      // Используем deadline выбранный пользователем как конец периода,
+      // вместо автоматического расчета конца месяца
+      const endOfPeriod = deadline;
+      
+      newGoal.periodStart = startOfMonth;
+      newGoal.periodEnd = endOfPeriod;
       
       const daysInPeriod = Math.ceil(
-        (newGoal.periodEnd.getTime() - newGoal.periodStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
+        (endOfPeriod.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1; // Включаем день окончания
       
       newGoal.dailyAllowance = Math.round(Number(amount) / daysInPeriod);
     }
