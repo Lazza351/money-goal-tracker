@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Goal, Transaction } from '@/interfaces';
 import { differenceInDays, format, isToday, startOfDay, isSameDay, endOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CalendarRange, PlusCircle, Pencil, Trash2, Eye, EyeOff, Undo } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ interface SurvivalGoalCardProps {
   onEditGoal: (goalId: string) => void;
   onDeleteGoal?: (goalId: string) => void;
   onToggleHideGoal?: (goalId: string) => void;
+  onUndoTransaction?: (transactionId: string) => void; // Новый проп для отмены транзакции
   isHidden?: boolean;
   transactions: Transaction[];
 }
@@ -28,6 +29,7 @@ const SurvivalGoalCard = ({
   onEditGoal,
   onDeleteGoal,
   onToggleHideGoal,
+  onUndoTransaction,
   isHidden = false,
   transactions
 }: SurvivalGoalCardProps) => {
@@ -127,6 +129,13 @@ const SurvivalGoalCard = ({
   const recentTransactions = [...goalTransactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
+
+  // Функция для отмены транзакции
+  const handleUndoTransaction = (transactionId: string) => {
+    if (onUndoTransaction) {
+      onUndoTransaction(transactionId);
+    }
+  };
 
   return (
     <Card 
@@ -252,9 +261,25 @@ const SurvivalGoalCard = ({
                         )}
                         <span className="truncate">{transaction.description}</span>
                       </div>
-                      <span className={isIncome ? 'text-green-500' : 'text-red-500'}>
-                        {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={isIncome ? 'text-green-500' : 'text-red-500'}>
+                          {isIncome ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} ₽
+                        </span>
+                        {onUndoTransaction && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 rounded-full hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUndoTransaction(transaction.id);
+                            }}
+                            title="Отменить транзакцию"
+                          >
+                            <Undo className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
